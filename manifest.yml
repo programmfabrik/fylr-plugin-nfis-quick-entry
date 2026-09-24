@@ -1,0 +1,17 @@
+plugin:
+  name: fylr-plugin-nfis-quick-entry
+  version: 0.1
+  url: https://github.com/programmfabrik/fylr-plugin-nfis-quick-entry
+  displayname:
+    de-DE: NFIS Schnellerfassung
+    en-US: NFIS Quick Entry
+  l10n: l10n/NfisQuickEntry.csv
+  info:
+    de-DE: "Plugin zur Schnellerfassung von Objekten im NFIS."
+    en-US: "Plugin for quick enty of objects in NFIS."
+  webfrontend:
+    url: NfisQuickEntry.js
+    css: NfisQuickEntry.css
+    html: NfisQuickEntry.html
+
+base_url_prefix: "webfrontend"

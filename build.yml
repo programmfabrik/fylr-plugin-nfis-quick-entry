@@ -1,0 +1,23 @@
+server:
+  install:
+    - l10n
+
+webfrontend:
+  bundles:
+    - sources:
+      - webfrontend/js/NfisQuickEntry.js
+      - webfrontend/js/NfisQuickEntryForm.js
+      - webfrontend/js/NfisQuickEntrySearchableSelect.js
+      - webfrontend/js/NfisQuickEntryNewForm.js
+      - webfrontend/js/NfisQuickEntryObjectDateRangeForm.js
+      - webfrontend/js/NfisQuickEntryObjectForm.js
+      - webfrontend/js/NfisQuickEntryObjectTypeForm.js
+      - webfrontend/js/NfisQuickEntryRepeatingForm.js
+      - webfrontend/js/NfisQuickEntryActionNumberForm.js
+      - webfrontend/js/NfisQuickEntryActionDateForm.js
+      - webfrontend/js/NfisQuickEntryActionForm.js
+  scss:
+    - webfrontend/NfisQuickEntry.scss
+  install:
+    - webfrontend/NfisQuickEntry.html
+

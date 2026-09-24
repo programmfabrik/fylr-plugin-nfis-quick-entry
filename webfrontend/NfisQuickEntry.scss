@@ -1,0 +1,248 @@
+.nfis-quick-entry-form-container {
+    width: 100%;
+    max-width: 985px;
+    align-self: center;
+
+    .ez5-date-range-form {
+        margin-bottom: 1rem;
+    }
+
+    .nfis-quick-entry-object-date-range-form {
+        margin-bottom: 1rem;
+        width: 100%;
+
+
+        .cui-form-container {
+            flex-direction: row;
+            align-items: flex-start;
+            flex-wrap: wrap;
+
+            &>.cui-form-row.cui-form-field-type--input:nth-child(2) {
+                flex: 1 1 auto;
+                width: calc(25% - 0.75rem);
+                margin-right: 0;
+            }
+
+            &>.cui-form-row.cui-form-field-type--input:nth-child(3) {
+                position: relative;
+                flex: 1 1 auto;
+                width: calc(25% + 0.75rem);
+                display: inline-flex;
+                align-items: center;
+            }
+
+            &>.cui-form-row.cui-form-field-type--input:nth-child(3)::before {
+                content: "";
+                display: inline-block;
+                flex: 0 0 auto;
+                width: calc(1.5rem / 3);
+                height: 3px;
+                background-color: #212121;
+                margin: 0 calc(1.5rem / 3);
+            }
+
+            &>.cui-form-row {
+                margin-bottom: 0;
+                flex-direction: row;
+                align-items: center;
+                flex: 1 1 0;
+            }
+
+            &>.cui-form-row .cui-date-time {
+                min-width: 0;
+                width: 100%;
+            }
+
+            &>.cui-form-row .cui-date-time input {
+                min-width: 50px;
+            }
+
+            .cui-select {
+                width: 100%;
+
+                .cui-button-select {
+                    --btn-background: #ffffff;
+                    --btn-border-color: transparent;
+                    --btn-color-hover: rgba(33, 33, 33, 0.65);
+                    --btn-background-hover: #ffffff;
+                }
+            }
+        }
+    }
+
+    .nfis-quick-entry-action-date-range-form {
+        margin-bottom: 1rem;
+        width: 100%;
+
+
+        .cui-form-container {
+            flex-direction: row;
+            align-items: flex-start;
+            flex-wrap: wrap;
+
+            &>.cui-form-row.cui-form-field-type--input:first-child {
+                flex: 1 1 auto;
+                width: calc(25% - 0.75rem);
+                margin-right: 0;
+            }
+
+            &>.cui-form-row.cui-form-field-type--input:nth-child(2) {
+                position: relative;
+                flex: 1 1 auto;
+                width: calc(25% + 0.75rem);
+                display: inline-flex;
+                align-items: center;
+            }
+
+            &>.cui-form-row.cui-form-field-type--input:nth-child(2)::before {
+                content: "";
+                display: inline-block;
+                flex: 0 0 auto;
+                width: calc(1.5rem / 3);
+                height: 3px;
+                background-color: #212121;
+                margin: 0 calc(1.5rem / 3);
+            }
+
+            &>.cui-form-row {
+                margin-bottom: 0;
+                flex-direction: row;
+                align-items: center;
+                flex: 1 1 0;
+            }
+
+            &>.cui-form-row .cui-date-time {
+                min-width: 0;
+                width: 100%;
+            }
+
+            &>.cui-form-row .cui-date-time input {
+                min-width: 50px;
+            }
+
+            .cui-select {
+                width: 100%;
+
+                .cui-button-select {
+                    --btn-background: #ffffff;
+                    --btn-border-color: transparent;
+                    --btn-color-hover: rgba(33, 33, 33, 0.65);
+                    --btn-background-hover: #ffffff;
+                }
+            }
+        }
+    }
+
+    .nfis-quick-entry-action-number-form {
+        margin-bottom: 1rem;
+        width: 100%;
+
+
+        .cui-form-container {
+            flex-direction: row;
+            align-items: flex-start;
+            flex-wrap: wrap;
+
+            &>.cui-form-row {
+                margin-bottom: 0;
+                flex-direction: row;
+                align-items: center;
+                flex: 1 1 0;
+            }
+
+            &>.cui-form-row .cui-date-time {
+                min-width: 0;
+                width: 100%;
+            }
+
+            &>.cui-form-row .cui-date-time input {
+                min-width: 50px;
+            }
+
+            .cui-input {
+                width: 100%;
+            }
+
+            .cui-select {
+                width: 100%;
+
+                .cui-button-select {
+                    --btn-background: #ffffff;
+                    --btn-border-color: transparent;
+                    --btn-color-hover: rgba(33, 33, 33, 0.65);
+                    --btn-background-hover: #ffffff;
+                }
+            }
+        }
+
+
+
+    }
+
+    .nfis-quck-entry-form-label {
+        flex: 0 0 auto;
+        width: 135px;
+        min-width: 135px;
+        max-width: none;
+        padding-right: 1rem;
+
+        span {
+            display: inline-block;
+            white-space: normal;
+            min-width: 100px;
+            max-width: 100%;
+            font-weight: 700;
+            line-height: 1.3;
+            word-wrap: break-word;
+            -webkit-hyphens: auto;
+            hyphens: auto;
+            padding-top: 0.38em;
+        }
+    }
+
+    .nfis-quick-entry-form-repeat-button-row {
+        margin-bottom: 1rem;
+    }
+}
+
+.cui-nfis-quick-entry-searchable-select {
+    width: 100%;
+}
+
+.nfis-searchable-select {
+    color: #212121;
+    width: 100%;
+
+    & input {
+        cursor: pointer;
+        color: inherit;
+    }
+
+    &:hover {
+        color: rgba(33, 33, 33, 0.65);
+    }
+
+    .nfis-searchable-select-chevron {
+        display: inline-flex;
+        align-items: center;
+        padding: 0 0.75rem;
+        margin-left: -0.375rem;
+        background-color: white;
+        cursor: pointer;
+    }
+}
+
+
+.nfis-quick-entry-loading-spinner {
+    width: fit-content;
+    font-size: 3rem !important;
+    align-self: center;
+}
+
+.template-2-example-class {
+    padding: 20px;
+
+    .slot1 {
+        font-size: 20px;
+    }
+}
