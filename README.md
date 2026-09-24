@@ -11,7 +11,7 @@ The plugin provides a new form based interface to create datasets with the Objek
 
 ## installation
 
-The latest version of this plugin can be found [here](https://github.com/programmfabrik/fylr-plugin-nfis-quick-entry/releases/latest/download/nfisDenkxwebExport.zip).
+The latest version of this plugin can be found [here](https://github.com/programmfabrik/fylr-plugin-nfis-quick-entry/releases/latest/download/nfisQuickEntry.zip).
 
 The ZIP can be downloaded and installed using the plugin manager, or used directly (recommended).
 

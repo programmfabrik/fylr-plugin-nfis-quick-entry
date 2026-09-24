@@ -21,3 +21,5 @@ webfrontend:
   install:
     - webfrontend/NfisQuickEntry.html
 
+zip_aliases:
+- nfisQuickEntry.zip
