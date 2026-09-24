@@ -17,11 +17,6 @@ The ZIP can be downloaded and installed using the plugin manager, or used direct
 
 Github has an overview page to get a list of [all release](https://github.com/programmfabrik/fylr-plugin-nfis-quick-entry/releases/).
 
-## configuration
-
-* baseconfig
-  * enable (true|false)
-
 ## sources
 
 The source code of this plugin is managed in a git repository at <https://github.com/programmfabrik/fylr-plugin-nfis-quick-entry>.
