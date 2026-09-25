@@ -41,7 +41,7 @@ class NfisQuickEntryObjectForm extends NfisQuickEntryForm {
             historischeBezuege: '',
             hinweis: '',
             // benutzer: ez5.session.user.data,
-            benutzer: ez5.session.user.data.user._generated_displayname,
+            benutzer: ez5.session.user?.data?.user?._generated_displayname || '',
             datum: datum,
         };
     }

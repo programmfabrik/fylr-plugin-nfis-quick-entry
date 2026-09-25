@@ -121,8 +121,16 @@ class NfisQuickEntry extends RootMenuApp {
     load() {
         super.load();
         this.__getNextNumber('a')
-        this.setState('loading')
         this.__plugin = ez5.pluginManager.getPlugin("fylr-plugin-nfis-quick-entry");
+        this.__loadInitialData()
+        this.__updateLayout()
+        return CUI.resolvedPromise();
+    }
+
+    // separate from load() so the "try again" button on the error state can
+    // re-run this without re-invoking the app's own lifecycle method
+    __loadInitialData() {
+        this.setState('loading')
 
         Promise.all([
             this.__getPoolIds(),
@@ -143,12 +151,11 @@ class NfisQuickEntry extends RootMenuApp {
             this.setState('new')
             // this.setState('object') // debug
             // this.setState('action') // debug
+        }).catch((error) => {
+            console.error('[NfisQuickEntry] failed to load initial data', error)
+            this.__loadError = error?.message || String(error)
+            this.setState('error')
         })
-
-        this.__updateLayout()
-
-
-        return CUI.resolvedPromise();
     }
 
     async __getPoolIds() {
@@ -162,8 +169,10 @@ class NfisQuickEntry extends RootMenuApp {
                 },
             });
             if (!response.ok) {
+                console.error(`[NfisQuickEntry] failed to load pools: ${response.status} ${response.statusText}`);
                 this.poolIds = []
                 resolve()
+                return
             }
 
             const pools = await response.json()
@@ -233,6 +242,9 @@ class NfisQuickEntry extends RootMenuApp {
                 break;
             case 'action':
                 content.push(...this.__getVerticalListLayoutContentForActionState())
+                break;
+            case 'error':
+                content.push(...this.__getVerticalListLayoutContentForErrorState())
                 break;
         }
         return content;
@@ -367,6 +379,31 @@ class NfisQuickEntry extends RootMenuApp {
             new CUI.HorizontalLayout({
                 right: {
                     content: [this.__actionFormActionButton]
+                }
+            })
+        ]
+    }
+
+    __getVerticalListLayoutContentForErrorState() {
+        const label = new CUI.Label({
+            text: this.__loadError
+                ? `Beim Laden ist ein Fehler aufgetreten: ${this.__loadError}`
+                : 'Beim Laden ist ein Fehler aufgetreten.',
+            multiline: true
+        });
+        const retryButton = new CUI.Button({
+            text: 'Erneut versuchen',
+            primary: true,
+            onClick: () => {
+                this.__loadInitialData()
+            }
+        });
+
+        return [
+            label,
+            new CUI.HorizontalLayout({
+                right: {
+                    content: [retryButton]
                 }
             })
         ]
@@ -532,7 +569,10 @@ class NfisQuickEntry extends RootMenuApp {
             this.__processDanteOptionsResponse(json, vocab)
             return json
         }
-        else return [{ value: null, text: 'Bitte auswählen' }]
+        else {
+            console.error(`[NfisQuickEntry] getOptionsFromDanteApi(${vocab}): request failed with status ${response.status} ${response.statusText} - falling back to a placeholder-only option list.`)
+            return [{ value: null, text: 'Bitte auswählen' }]
+        }
     }
 
     async getOptionsFromInternalList(objectType) {
@@ -584,12 +624,21 @@ class NfisQuickEntry extends RootMenuApp {
             const response = responses[i];
             const responseJson = await response.json()
             if (!this.objectTypeMaskMap[objectType]) {
-                this.objectTypeMaskMap[objectType] = responseJson.aggregations._result_table_masks.terms[0].term
+                const term = responseJson.aggregations?._result_table_masks?.terms?.[0]?.term
+                if (term) {
+                    this.objectTypeMaskMap[objectType] = term
+                } else {
+                    console.warn(`[NfisQuickEntry] getOptionsFromInternalList(${objectType}): no "_mask" aggregation term found, objectTypeMaskMap will stay unset for this type.`)
+                }
             }
             for (let i = 0; i < responseJson.objects.length; i++) {
                 const object = responseJson.objects[i];
-                const text = object._standard[1].text["de-DE"]
+                const text = object._standard?.[1]?.text?.["de-DE"]
                 const value = object._global_object_id
+                if (!text || !value) {
+                    console.warn(`[NfisQuickEntry] getOptionsFromInternalList(${objectType}): skipping object with unexpected shape`, object);
+                    continue;
+                }
                 options.push({
                     text: text,
                     value: value,
@@ -633,6 +682,9 @@ class NfisQuickEntry extends RootMenuApp {
         this._assertResponseOk(response, 'get dante jskos ' + uri)
         const resultJSON = await response.json()
         const jskos = resultJSON[0]
+        if (!jskos) {
+            throw new Error(`[NfisQuickEntry] getDanteJSKOS: no concept found for URI "${uri}" (it may have been deleted or renamed upstream).`)
+        }
         const databaseLanguages = CustomDataTypeDANTE.prototype.getDatabaseLanguages()
         const geojson = DANTEUtil.getGeoJSONFromDANTEJSKOS(jskos)
         const ancestors = []
@@ -735,6 +787,9 @@ class NfisQuickEntry extends RootMenuApp {
     async createFlaeche() {
         const form = this.__getOrCreateForm(NfisQuickEntryNewForm);
         const formData = form.getData()
+        if (!formData.pool || !formData.gemarkung) {
+            throw new Error('[NfisQuickEntry] createFlaeche(): "pool" and "gemarkung" are required but missing from the start form data - this should be unreachable since the button is only shown once both are set.')
+        }
         const url = '/api/v1/db/flaeche?priority=2&format=long'
 
         const danteGemarkung = await this.getDanteJSKOS(formData.gemarkung)
@@ -784,8 +839,14 @@ class NfisQuickEntry extends RootMenuApp {
     }
 
     async createObject() {
-        const form = this.__getOrCreateForm(NfisQuickEntryObjectForm);
-        const formData = form.getData()
+        if (!this.createdFlaeche) {
+            throw new Error('[NfisQuickEntry] createObject(): called before createFlaeche() succeeded - no Fläche to link the object to.')
+        }
+
+        const formData = this.__getOrCreateForm(NfisQuickEntryNewForm).getData()
+        if (!formData.pool || !formData.politicalAffiliation || !formData.objectType || !formData.objectCategory) {
+            throw new Error('[NfisQuickEntry] createObject(): missing pool/politicalAffiliation/objectType/objectCategory from the start form data.')
+        }
         const url = '/api/v1/db/item?priority=2&format=long'
 
         const dantePoliticalAffiliation = await this.getDanteJSKOS(formData.politicalAffiliation)
@@ -921,6 +982,9 @@ class NfisQuickEntry extends RootMenuApp {
     }
 
     async updateObject() {
+        if (!this.createdObject) {
+            throw new Error('[NfisQuickEntry] updateObject(): called before createObject() succeeded - nothing to update.')
+        }
         const form = this.__getOrCreateForm(NfisQuickEntryObjectForm);
         const formData = form.getData()
         const url = '/api/v1/db/item?priority=2&format=long'
@@ -1006,9 +1070,17 @@ class NfisQuickEntry extends RootMenuApp {
     }
 
     async createAction() {
-        // TODO: check which fields are mandatory and only include the others if they are set.
+        // TODO: check which fields are mandatory and only include the others in payload if they are set.
+        if (!this.createdFlaeche || !this.createdObject) {
+            throw new Error('[NfisQuickEntry] createAction(): called before createFlaeche()/createObject() succeeded - no Fläche/Objekt to link the Maßnahme to.')
+        }
+        // pool is collected on the start form (NfisQuickEntryNewForm), not on the action form itself
+        const startFormData = this.__getOrCreateForm(NfisQuickEntryNewForm).getData()
         const form = this.__getOrCreateForm(NfisQuickEntryActionForm);
-        const formData = form.getData()
+        const formData = { ...startFormData, ...form.getData() }
+        if (!formData.pool) {
+            throw new Error('[NfisQuickEntry] createAction(): missing "pool" from the start form data.')
+        }
         const url = '/api/v1/db/massnahme?priority=2&format=long'
 
         const einrichtung = await this.getDanteJSKOS(formData.actionNumberForm.einrichtung)

@@ -47,7 +47,7 @@ class NfisQuickEntryActionForm extends NfisQuickEntryForm {
             beschreibungFunde: '',
             firma: this.optionsMap.nld_archaeological_service_provider?.[0]?.value || null,
             // benutzer: ez5.session.user.data,
-            benutzer: ez5.session.user.data.user._generated_displayname,
+            benutzer: ez5.session.user?.data?.user?._generated_displayname || '',
             datum: datum,
             finder: null,
             fundmelder: null
