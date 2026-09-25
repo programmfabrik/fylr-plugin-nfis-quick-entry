@@ -174,27 +174,6 @@ class NfisQuickEntry extends RootMenuApp {
         })
     }
 
-    __loadVocabAndGemarkungOptions(vocabularies) {
-        return new Promise((resolve, reject) => {
-            const vocabularyPromise = this.getVocabulariesFromDanteApi(vocabularies)
-            const optionsPromises = []
-            vocabularies.forEach(vocab => {
-                optionsPromises.push(this.getOptionsFromDanteApi(vocab))
-            })
-
-            vocabularyPromise.then(response => {
-                const vocabularyResponse = response.filter(vocabulary => Array.isArray(vocabulary.notation))
-                for (let i = 0; i < vocabularyResponse.length; i++) {
-                    const vocabulary = vocabularyResponse[i];
-                    this.optionsMap.vocab.push({ value: vocabulary.notation[0], text: vocabulary.prefLabel.de })
-                }
-            })
-
-            Promise.all([vocabularyPromise, ...optionsPromises]).then(responses => {
-                resolve()
-            })
-        })
-    }
     __processDanteOptionsResponse(response, vocabName) {
         if (!Array.isArray(response?.[1]) || !Array.isArray(response?.[3])) {
             return;
@@ -545,16 +524,6 @@ class NfisQuickEntry extends RootMenuApp {
 
 
 
-
-    async getVocabulariesFromDanteApi(vocabs) {
-        if (!Array.isArray(vocabs)) {
-            console.error('vocabs must be an array')
-            throw new Error('vocabs must be an array')
-        }
-        const response = await fetch("https://api.dante.gbv.de/voc?cache=1&notation=" + vocabs.join('|'))
-        if (response.ok) return response.json()
-        else return []
-    }
 
     async getOptionsFromDanteApi(vocab) {
         const response = await fetch(`https://api.dante.gbv.de/suggest?search=&voc=${vocab}&language=de&limit=1000&cache=0&ancestors=`);

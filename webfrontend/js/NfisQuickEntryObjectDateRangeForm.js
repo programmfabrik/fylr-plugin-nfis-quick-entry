@@ -118,10 +118,7 @@ class NfisQuickEntryObjectDateRangeForm extends NfisQuickEntryForm {
     }
 
     render() {
-        this.cuiForm;
-
         return new CUI.HorizontalLayout({
-
             left: {
                 content: [
                     new CUI.Label({
@@ -133,12 +130,6 @@ class NfisQuickEntryObjectDateRangeForm extends NfisQuickEntryForm {
             center: {
                 content: [this.cuiForm]
             }
-
         })
-
-        return new CUI.VerticalList({
-            maximize_horizontal: true,
-            content: [...above, this.cuiForm, ...below]
-        });
     }
 }
