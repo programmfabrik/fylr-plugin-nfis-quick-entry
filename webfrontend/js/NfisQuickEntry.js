@@ -265,17 +265,16 @@ class NfisQuickEntry extends RootMenuApp {
                     CUI.confirm({
                         text: 'Wollen Sie eine neue Fundstelle anlegen?'
                     }).done((res) => {
-                        const submitData = form.getData()
-                        console.log('confirmed');
-                        console.log('submitted form data', submitData);
                         this.setState('loading')
 
-                        // this.createFlaeche().then(() => {
-                        //     this.createObject().then(() => {
-                        //         this.setState('object')
-                        //     })
-                        // })
-                        setTimeout(() => { this.setState('object') }, 6000)
+                        this.createFlaeche().then(() => this.createObject()).then(() => {
+                            CUI.toaster({ text: 'Fundstelle wurde angelegt.', show_ms: 3000 })
+                            this.setState('object')
+                        }).catch((error) => {
+                            console.error('[NfisQuickEntry] failed to create Fundstelle', error)
+                            CUI.problem({ text: 'Fehler beim Anlegen der Fundstelle. Bitte versuchen Sie es erneut.' })
+                            this.setState('new')
+                        })
                     })
                 }
             })
@@ -304,29 +303,24 @@ class NfisQuickEntry extends RootMenuApp {
                 text: 'Speichern',
                 primary: true,
                 onClick: (e, button) => {
-                    // TODO: send object form data to api
                     this.setState('loading')
-                    // this.updateObject().then(() => {
-                    //     CUI.confirm({
-                    //         text: 'Wollen Sie die zugehörige Maßnahme anlegen?',
-                    //         button_text_ok: 'Ja',
-                    //         button_text_cancel: 'Nein',
-                    //     }).done((res) => {
-                    //         this.setState('action')
-                    //     }).fail(() => {
-                    //         this.__reset()
-                    //         this.setState('new')
-                    //     })
-                    // })
-                    CUI.confirm({
-                        text: 'Wollen Sie die zugehörige Maßnahme anlegen?',
-                        button_text_ok: 'Ja',
-                        button_text_cancel: 'Nein',
-                    }).done((res) => {
-                        this.setState('action')
-                    }).fail(() => {
-                        this.__reset()
-                        this.setState('new')
+
+                    this.updateObject().then(() => {
+                        CUI.toaster({ text: 'Objekt wurde gespeichert.', show_ms: 3000 })
+                        CUI.confirm({
+                            text: 'Wollen Sie die zugehörige Maßnahme anlegen?',
+                            button_text_ok: 'Ja',
+                            button_text_cancel: 'Nein',
+                        }).done((res) => {
+                            this.setState('action')
+                        }).fail(() => {
+                            this.__reset()
+                            this.setState('new')
+                        })
+                    }).catch((error) => {
+                        console.error('[NfisQuickEntry] failed to save Objekt', error)
+                        CUI.problem({ text: 'Fehler beim Speichern des Objekts. Bitte versuchen Sie es erneut.' })
+                        this.setState('object')
                     })
                 }
             })
@@ -355,20 +349,17 @@ class NfisQuickEntry extends RootMenuApp {
                     CUI.confirm({
                         text: 'Wollen Sie die Maßnahme jetzt anlegen?'
                     }).done((res) => {
-                        const submitData = form.getData()
-                        console.log('confirmed');
-                        console.log('submitted form data', submitData);
                         this.setState('loading')
-                        // TODO: Send action form data to API, after response => Change state
-                        // this.createAction().then(() => {
-                        //     // TODO: Create state that shows links to the created object and offers to restart the process
-                        //     this.__reset()
-                        //     this.setState('new')
-                        // })
-                        setTimeout(() => {
+
+                        this.createAction().then(() => {
+                            CUI.toaster({ text: 'Maßnahme wurde angelegt.', show_ms: 3000 })
                             this.__reset()
                             this.setState('new')
-                        }, 6000)
+                        }).catch((error) => {
+                            console.error('[NfisQuickEntry] failed to create Maßnahme', error)
+                            CUI.problem({ text: 'Fehler beim Anlegen der Maßnahme. Bitte versuchen Sie es erneut.' })
+                            this.setState('action')
+                        })
                     })
                 }
             })
