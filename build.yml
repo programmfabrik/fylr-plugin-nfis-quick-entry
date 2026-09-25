@@ -11,7 +11,6 @@ webfrontend:
       - webfrontend/js/NfisQuickEntryNewForm.js
       - webfrontend/js/NfisQuickEntryObjectDateRangeForm.js
       - webfrontend/js/NfisQuickEntryObjectForm.js
-      - webfrontend/js/NfisQuickEntryObjectTypeForm.js
       - webfrontend/js/NfisQuickEntryRepeatingForm.js
       - webfrontend/js/NfisQuickEntryActionNumberForm.js
       - webfrontend/js/NfisQuickEntryActionDateForm.js
