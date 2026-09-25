@@ -622,6 +622,7 @@ class NfisQuickEntry extends RootMenuApp {
         const options = [{ value: null, text: 'Bitte auswählen' }]
         for (let i = 0; i < responses.length; i++) {
             const response = responses[i];
+            await this._assertResponseOk(response, `getOptionsFromInternalList(${objectType})`)
             const responseJson = await response.json()
             if (!this.objectTypeMaskMap[objectType]) {
                 const term = responseJson.aggregations?._result_table_masks?.terms?.[0]?.term
@@ -679,7 +680,7 @@ class NfisQuickEntry extends RootMenuApp {
         if (!uri) return null
         const response = await fetch('https://api.dante.gbv.de/data?cache=1&uri=' + encodeURIComponent(uri) + '&properties=+hiddenLabel,notation,scopeNote,definition,identifier,example,location,startDate,endDate,startPlace,endPlace,ancestors')
 
-        this._assertResponseOk(response, 'get dante jskos ' + uri)
+        await this._assertResponseOk(response, 'get dante jskos ' + uri)
         const resultJSON = await response.json()
         const jskos = resultJSON[0]
         if (!jskos) {
@@ -1100,8 +1101,8 @@ class NfisQuickEntry extends RootMenuApp {
             "_objecttype": this.createdObject._objecttype,
             "_mask": this.createdObject._mask,
             "_global_object_id": this.createdObject._global_object_id,
-            "flaeche": {
-                "_id": this.createdObject.flaeche._id
+            "item": {
+                "_id": this.createdObject.item._id
             }
         }
 
@@ -1262,7 +1263,7 @@ class NfisQuickEntry extends RootMenuApp {
                         "_id": null,
                         "lk_objekt": object,
                         "__idx": 0,
-                        "_version": this.createdObject.object._version
+                        "_version": this.createdObject.item._version
                     }
                 ],
                 "_reverse_nested:flaeche__massnahme:lk_massnahme": [
@@ -1299,7 +1300,7 @@ class NfisQuickEntry extends RootMenuApp {
             },
             body: JSON.stringify(payload),
         })
-        this._assertResponseOk(response)
+        await this._assertResponseOk(response, `POST ${url}`)
         return await response.json()
     }
 
