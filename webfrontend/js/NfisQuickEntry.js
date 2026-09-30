@@ -2,6 +2,7 @@ class NfisQuickEntry extends RootMenuApp {
 
     // Ablauf
     // state: init => Lade Pools und Optionen für start state
+    // state: error => Falles etwas schief geht in init
     // state: start => Pool und Germarkung auswählen
     // state: loading => Fläche und Objekt über API anlegen, Objekt mit Fläche verknüpfen über FStNr
     // state: object => Metadaten für das Objekt erfassen
@@ -703,13 +704,13 @@ class NfisQuickEntry extends RootMenuApp {
         return data;
     }
 
-    async getAnnotationObject(annotationTypeUri, text, verfasser = null, datum = null) {
+    async getAnnotationObject(annotationTypeUri, text, verfasser = null, datum = null, verfasserFieldName = 'verfasser') {
         const annotationType = await this.getDanteJSKOS(annotationTypeUri)
         const datumObject = datum ? { "value": datum } : null
         return {
             "text": text,
             "lk_anmerkungstyp": annotationType,
-            "verfasser": verfasser,
+            [verfasserFieldName]: verfasser, // inconsistent between item and massnahme
             "datum": datumObject
         }
     }
@@ -878,12 +879,18 @@ class NfisQuickEntry extends RootMenuApp {
                 "objekttyp_ergaenzung": null,
                 "lk_objekttyp_gesichert": null,
                 "_nested:item__objektkategorie": [
-                    danteObjectCategory
+                    {
+                        "lk_objektkategorie": danteObjectCategory
+                    }
                 ],
                 "lk_obertaegig": null,
                 "erhaltene_hoehe_in_m": null,
                 "_nested:item__planung": [],
-                "_nested:item__politische_zugehoerigkeit": [dantePoliticalAffiliation],
+                "_nested:item__politische_zugehoerigkeit": [
+                    {
+                        "lk_politische_zugehoerigkeit": dantePoliticalAffiliation
+                    }
+                ],
                 "_nested:item__ehemalige_gebietszugehoerigkeit": [],
                 "_nested:item__anschrift": [],
                 "lk_nfis_geometrie": {
@@ -983,9 +990,9 @@ class NfisQuickEntry extends RootMenuApp {
         const object = structuredClone(this.createdObject)
         object.item._version += 1;
 
-        const descriptions = structuredClone(object.item["_nested:item__beschreibung"]);
-        const annotations = structuredClone(object.item["_nested:item__anmerkung_intern"]);
-        const events = structuredClone(object.item["_nested:item__event"]);
+        const descriptions = structuredClone(object.item["_nested:item__beschreibung"] || []);
+        const annotations = structuredClone(object.item["_nested:item__anmerkung_intern"] || []);
+        const events = structuredClone(object.item["_nested:item__event"] || []);
 
         // Beschreibung
         if (formData.fundstelleBeschreibung) {
@@ -1118,7 +1125,7 @@ class NfisQuickEntry extends RootMenuApp {
                 "_mask": "personen_massnahmen__all_fields",
                 "_global_object_id": formData.finder,
                 "personen_massnahmen": {
-                    "_id": formData.finder.split('@')[0]
+                    "_id": Number.parseInt(formData.finder.split('@')[0])
                 }
             }
             const rolleFinder = await this.getDanteJSKOS("http://uri.gbv.de/terminology/nld_function/179f158c-4fa1-49c6-ba23-0b7b117f9639")
@@ -1135,7 +1142,7 @@ class NfisQuickEntry extends RootMenuApp {
                 "_mask": "personen_massnahmen__all_fields",
                 "_global_object_id": formData.fundmelder,
                 "personen_massnahmen": {
-                    "_id": formData.fundmelder.split('@')[0]
+                    "_id": Number.parseInt(formData.fundmelder.split('@')[0])
                 }
             }
             const rolleFundmelder = await this.getDanteJSKOS("http://uri.gbv.de/terminology/nld_function/baf841f8-2c05-4f7c-b8d8-f22f5f583f62")
@@ -1164,7 +1171,7 @@ class NfisQuickEntry extends RootMenuApp {
                 },
                 "text": formData.beschreibungDerMassnahme,
                 "quelle": null,
-                "verfasser": null,
+                "verfasserin": null,
                 "datum": null
             })
         }
@@ -1183,7 +1190,7 @@ class NfisQuickEntry extends RootMenuApp {
                 },
                 "text": formData.beschreibungFunde,
                 "quelle": null,
-                "verfasser": null,
+                "verfasserin": null,
                 "datum": null
             })
         }
@@ -1194,7 +1201,8 @@ class NfisQuickEntry extends RootMenuApp {
                 "http://uri.gbv.de/terminology/nld_comment_type/f0583bd5-e276-4ce1-b2e4-1c8576ff3562",
                 "Datensatz erstellt",
                 formData.benutzer,
-                formData.datum
+                formData.datum,
+                'verfasserin'
             )
             annotations.push(annotation)
         }
@@ -1220,7 +1228,9 @@ class NfisQuickEntry extends RootMenuApp {
                     }
                 ],
                 "_nested:massnahme__institutionen": [
-                    institution
+                    {
+                        "lk_institution": institution
+                    }
                 ],
                 "lk_massnahmenart": massnahmenart,
                 "datierung": {
@@ -1254,7 +1264,7 @@ class NfisQuickEntry extends RootMenuApp {
                         "_id": null,
                         "lk_objekt": object,
                         "__idx": 0,
-                        "_version": this.createdObject.item._version
+                        "_version": 1
                     }
                 ],
                 "_reverse_nested:flaeche__massnahme:lk_massnahme": [
@@ -1267,7 +1277,7 @@ class NfisQuickEntry extends RootMenuApp {
                         "_id": null,
                         "lk_flaeche": flaeche,
                         "__idx": 0,
-                        "_version": this.createdFlaeche.flaeche._version
+                        "_version": 1
                     }
                 ],
                 "_nested:massnahme__e_akte": [],
