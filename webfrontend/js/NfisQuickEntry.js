@@ -1052,15 +1052,15 @@ class NfisQuickEntry extends RootMenuApp {
             )
             annotations.push(annotation)
         }
-        if (formData.benutzer && formData.datum) {
-            const annotation = await this.getAnnotationObject(
-                "http://uri.gbv.de/terminology/nld_comment_type/f0583bd5-e276-4ce1-b2e4-1c8576ff3562",
-                "Datensatz erstellt",
-                formData.benutzer,
-                formData.datum
-            )
-            annotations.push(annotation)
-        }
+
+        const createdByAnnotation = await this.getAnnotationObject(
+            "http://uri.gbv.de/terminology/nld_comment_type/f0583bd5-e276-4ce1-b2e4-1c8576ff3562",
+            "Datensatz erstellt",
+            formData.benutzer,
+            formData.datum
+        )
+        annotations.push(createdByAnnotation)
+
 
         // Ereignisse (Entstehungen)
         const creationEvents = await this.getCreationEvents(formData.datierungen)
