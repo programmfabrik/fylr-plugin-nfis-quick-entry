@@ -786,6 +786,7 @@ class NfisQuickEntry extends RootMenuApp {
         const url = '/api/v1/db/flaeche?priority=2&format=long'
 
         const danteGemarkung = await this.getDanteJSKOS(formData.gemarkung)
+        const dantePoliticalAffiliation = await this.getDanteJSKOS(formData.politicalAffiliation)
         const danteFundstellennummer = await this.getDanteJSKOS('http://uri.gbv.de/terminology/nld_area_type/1d59bd25-81ea-4e17-b786-7677c595ab1c')
 
         const payload = [
@@ -809,7 +810,13 @@ class NfisQuickEntry extends RootMenuApp {
                     "lk_bilddatenbank": null,
                     "_nested:flaeche__dokumente": [],
                     "_nested:flaeche__identifier": [],
-                    "_nested:flaeche__politische_zugehoerigkeit": [],
+                    "_nested:flaeche__politische_zugehoerigkeit": [
+                        {
+                            "lk_politische_zugehoerigkeit": dantePoliticalAffiliation,
+                            "stadtteil": null,
+                            "_nested:flaeche__politische_zugehoerigkeit__flurstuecke": []
+                        }
+                    ],
                     "lk_nfis_geometrie": {
                         "geometry_ids": []
                     },
@@ -1082,6 +1089,7 @@ class NfisQuickEntry extends RootMenuApp {
         }
         const url = '/api/v1/db/massnahme?priority=2&format=long'
 
+        const dantePoliticalAffiliation = await this.getDanteJSKOS(formData.politicalAffiliation)
         const einrichtung = await this.getDanteJSKOS(formData.actionNumberForm.einrichtung)
         const institution = await this.getDanteJSKOS(formData.institution)
         const massnahmenart = await this.getDanteJSKOS(formData.massnahmenart)
@@ -1196,16 +1204,14 @@ class NfisQuickEntry extends RootMenuApp {
         }
 
         // Annotations
-        if (formData.benutzer && formData.datum) {
-            const annotation = await this.getAnnotationObject(
-                "http://uri.gbv.de/terminology/nld_comment_type/f0583bd5-e276-4ce1-b2e4-1c8576ff3562",
-                "Datensatz erstellt",
-                formData.benutzer,
-                formData.datum,
-                'verfasserin'
-            )
-            annotations.push(annotation)
-        }
+        const createdByAnnotation = await this.getAnnotationObject(
+            "http://uri.gbv.de/terminology/nld_comment_type/f0583bd5-e276-4ce1-b2e4-1c8576ff3562",
+            "Datensatz erstellt",
+            formData.benutzer,
+            formData.datum,
+            'verfasserin'
+        )
+        annotations.push(createdByAnnotation)
 
         const payload = [{
             "massnahme": {
@@ -1248,7 +1254,13 @@ class NfisQuickEntry extends RootMenuApp {
                 "_nested:massnahme__funde": [],
                 "flaeche": null,
                 "lk_projektion": null,
-                "_nested:massnahme__politische_zugehoerigkeit": [],
+                "_nested:massnahme__politische_zugehoerigkeit": [
+                    {
+                        "lk_politische_zugehoerigkeit": dantePoliticalAffiliation,
+                        "stadtteil": null,
+                        "_nested:massnahme__politische_zugehoerigkeit__flurstuecke": []
+                    }
+                ],
                 "lk_nfis_geometrie": {
                     "geometry_ids": []
                 },
