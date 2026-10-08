@@ -13,6 +13,7 @@ class NfisQuickEntryObjectForm extends NfisQuickEntryForm {
     getSubForms() {
         return [
             {
+                // TODO: Change to non-repeating form since validation doesn't allow multiple creation events
                 form: new NfisQuickEntryRepeatingForm({
                     name: 'datierungen',
                     rowFormClass: NfisQuickEntryObjectDateRangeForm,

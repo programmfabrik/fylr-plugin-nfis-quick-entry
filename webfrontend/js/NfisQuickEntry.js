@@ -1,5 +1,9 @@
 class NfisQuickEntry extends RootMenuApp {
 
+    // TODO: create end state with a screen that shows the created flaeche, objekt, and massnahme
+    // It should show the _standard display names and a button for each item that opens it in a new tab
+    // maybe use an html template for this?
+
     // Ablauf
     // state: init => Lade Pools und Optionen für start state
     // state: error => Falles etwas schief geht in init
@@ -455,74 +459,6 @@ class NfisQuickEntry extends RootMenuApp {
 
 
 
-
-    // __showSimpleElements() {
-    //     const title = new CUI.Label({ text: "Hello world" });
-    //     const text = new CUI.Label({
-    //         text: "Lorem Ipsum Dolor Sit amet",
-    //         multiline: true
-    //     });
-
-    //     const data = {
-    //         example_data: {
-    //             version: "original",
-    //             name: "file.jpg",
-    //             another_value: "foo"
-    //         }
-    //     };
-
-    //     const form_example = new CUI.Form({
-    //         data: data,
-    //         name: "example_data",
-    //         fields: [
-    //             {
-    //                 type: CUI.Output,
-    //                 name: "name",
-    //                 form: { label: "File name" }
-    //             },
-    //             {
-    //                 type: CUI.Select,
-    //                 name: "version",
-    //                 form: { label: "Version" },
-    //                 options: () => {
-    //                     const options = ["original", "var", "foo", "bar"];
-    //                     return options.map((option) => ({ value: option, text: "Option --> " + option }));
-    //                 }
-    //             },
-    //             {
-    //                 type: CUI.Output,
-    //                 name: "another_value",
-    //                 form: { label: "Another value" }
-    //             }
-    //         ],
-    //         onDataChanged: (changedData) => {
-    //             changedData.another_value = changedData.version
-    //             const fields = form_example.opts.fields
-    //             const fieldLength = fields.length
-    //             changedData['field_' + fieldLength] = fieldLength
-    //             fields.push({
-    //                 type: CUI.Output,
-    //                 name: 'field_' + fieldLength,
-    //                 form: { label: "Field " + fieldLength }
-    //             })
-    //             form_example.opts.fields = fields;
-
-    //             console.log("Data changed", changedData);
-    //             form_example.updateData(changedData);
-    //             form_example.reload()
-    //         }
-    //     });
-
-    //     const verticalListLayout = new CUI.VerticalList({
-    //         content: [
-    //             title,
-    //             text,
-    //             form_example.start()
-    //         ]
-    //     });
-    //     this.__horizontalLayout.replace(verticalListLayout, "center");
-    // }
-
     // __showTemplate() {
     //     const htmlTemplate = new CUI.Template({ name: "nfis-quick-entry-template-1" });
     //     this.__horizontalLayout.replace(htmlTemplate, "center");
@@ -849,6 +785,12 @@ class NfisQuickEntry extends RootMenuApp {
         }
         const url = '/api/v1/db/item?priority=2&format=long'
 
+        const config = ez5.session.getBaseConfig("plugin", "numeric-id-auto-incrementer");
+        const tagIds = config.nfisQuickEntry.item_tags || [];
+        const tags = tagIds.map(tagId => {
+            return { '_id': tagId.id }
+        })
+
         const dantePoliticalAffiliation = await this.getDanteJSKOS(formData.politicalAffiliation)
         const danteObjectType = await this.getDanteJSKOS(formData.objectType)
         const danteObjectCategory = await this.getDanteJSKOS(formData.objectCategory)
@@ -969,17 +911,7 @@ class NfisQuickEntry extends RootMenuApp {
             },
             "_mask": "item__all_fields",
             "_objecttype": "item",
-            "_tags": [
-                {
-                    "_id": 2
-                },
-                {
-                    "_id": 3
-                },
-                {
-                    "_id": 8
-                }
-            ],
+            "_tags": tags,
             "_idx_in_objects": 1
         }]
 

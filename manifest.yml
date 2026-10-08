@@ -15,3 +15,14 @@ plugin:
     html: NfisQuickEntry.html
 
 base_url_prefix: "webfrontend"
+
+base_config:
+  - name: nfisQuickEntry
+    parameters:
+      item_tags:
+        type: table
+        fields:
+          - name: id
+            type: int
+            position: 0
+        position: 0
