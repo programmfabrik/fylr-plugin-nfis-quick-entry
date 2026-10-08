@@ -24,5 +24,6 @@ base_config:
         fields:
           - name: id
             type: int
+            min: 1
             position: 0
         position: 0
