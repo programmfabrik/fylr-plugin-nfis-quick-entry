@@ -1,9 +1,5 @@
 class NfisQuickEntry extends RootMenuApp {
 
-    // TODO: create end state with a screen that shows the created flaeche, objekt, and massnahme
-    // It should show the _standard display names and a button for each item that opens it in a new tab
-    // maybe use an html template for this?
-
     // Ablauf
     // state: init => Lade Pools und Optionen für start state
     // state: error => Falles etwas schief geht in init
@@ -234,6 +230,9 @@ class NfisQuickEntry extends RootMenuApp {
             case 'action':
                 content.push(...this.__getVerticalListLayoutContentForActionState())
                 break;
+            case 'end':
+                content.push(...this.__getVerticalListLayoutContentForEndState())
+                break;
             case 'error':
                 content.push(...this.__getVerticalListLayoutContentForErrorState())
                 break;
@@ -305,8 +304,7 @@ class NfisQuickEntry extends RootMenuApp {
                         }).done((res) => {
                             this.setState('action')
                         }).fail(() => {
-                            this.__reset()
-                            this.setState('new')
+                            this.setState('end')
                         })
                     }).catch((error) => {
                         console.error('[NfisQuickEntry] failed to save Objekt', error)
@@ -344,8 +342,7 @@ class NfisQuickEntry extends RootMenuApp {
 
                         this.createAction().then(() => {
                             CUI.toaster({ text: 'Maßnahme wurde angelegt.', show_ms: 3000 })
-                            this.__reset()
-                            this.setState('new')
+                            this.setState('end')
                         }).catch((error) => {
                             console.error('[NfisQuickEntry] failed to create Maßnahme', error)
                             CUI.problem({ text: 'Fehler beim Anlegen der Maßnahme. Bitte versuchen Sie es erneut.' })
@@ -364,6 +361,61 @@ class NfisQuickEntry extends RootMenuApp {
                 }
             })
         ]
+    }
+
+    __getVerticalListLayoutContentForEndState() {
+        const content = []
+
+        const items = [
+            { label: 'Fläche', obj: this.createdFlaeche },
+            { label: 'Objekt', obj: this.createdObject },
+            { label: 'Maßnahme', obj: this.createdAction },
+        ]
+
+        for (const { label, obj } of items) {
+            if (!obj) {
+                continue
+            }
+
+            content.push(new CUI.VerticalList({
+                class: 'nfis-quick-entry-end-state-item',
+                content: [
+                    new CUI.Label({ text: `${label}: ${this.__getDisplayName(obj)}` }),
+                    new CUI.ButtonHref({
+                        appearance: "link",
+                        text: 'In neuem Tab öffnen',
+                        onClick: () => {
+                            window.open(this.__getDetailUrl(obj), '_blank')
+                        }
+                    })
+                ]
+            }))
+        }
+
+        content.push(new CUI.HorizontalLayout({
+            right: {
+                content: [
+                    new CUI.Button({
+                        text: 'Neue Fundstelle anlegen',
+                        primary: true,
+                        onClick: () => {
+                            this.__reset()
+                            this.setState('new')
+                        }
+                    })
+                ]
+            }
+        }))
+
+        return content
+    }
+
+    __getDisplayName(obj) {
+        return obj?._standard?.[1]?.text?.['de-DE'] || '(ohne Titel)'
+    }
+
+    __getDetailUrl(obj) {
+        return `/#/detail/${obj._uuid}`
     }
 
     __getVerticalListLayoutContentForErrorState() {
