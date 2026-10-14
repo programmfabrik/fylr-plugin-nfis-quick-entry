@@ -822,7 +822,7 @@ class NfisQuickEntry extends RootMenuApp {
         }
         const url = '/api/v1/db/item?priority=2&format=long'
 
-        const config = ez5.session.getBaseConfig("plugin", "numeric-id-auto-incrementer");
+        const config = ez5.session.getBaseConfig("plugin", "fylr-plugin-nfis-quick-entry");
         const tagIds = config.nfisQuickEntry.item_tags || [];
         const tags = tagIds.map(tagId => {
             return { '_id': tagId.id }
