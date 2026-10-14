@@ -40,12 +40,12 @@ class NfisQuickEntryActionForm extends NfisQuickEntryForm {
             String(today.getDate()).padStart(2, '0');
 
         return {
-            institution: this.optionsMap.subset_nld_actor_institution?.[0]?.value || null,
-            massnahmenart: this.optionsMap.nld_measure_type?.[0]?.value || null,
-            ursache: this.optionsMap.nld_measure_reason?.[0]?.value || null,
+            institution: null,
+            massnahmenart: null,
+            ursache: null,
             beschreibungDerMassnahme: '',
             beschreibungFunde: '',
-            firma: this.optionsMap.nld_archaeological_service_provider?.[0]?.value || null,
+            firma: null,
             // benutzer: ez5.session.user.data,
             benutzer: ez5.session.user?.data?.user?._generated_displayname || '',
             datum: datum,
@@ -64,28 +64,22 @@ class NfisQuickEntryActionForm extends NfisQuickEntryForm {
 
         return [
             {
-                type: NfisQuickEntrySearchableSelect,
+                type: NfisQuickEntryDanteSearchableSelect,
                 name: "institution",
                 form: { label: "Institution" },
-                options: () => {
-                    return this.optionsMap['subset_nld_actor_institution']
-                },
+                vocab: 'subset_nld_actor_institution',
             },
             {
-                type: CUI.Select,
+                type: NfisQuickEntryDanteSearchableSelect,
                 name: "massnahmenart",
                 form: { label: "Art der Maßnahme" },
-                options: () => {
-                    return this.optionsMap['nld_measure_type']
-                },
+                vocab: 'nld_measure_type',
             },
             {
-                type: CUI.Select,
+                type: NfisQuickEntryDanteSearchableSelect,
                 name: "ursache",
                 form: { label: "Ursache" },
-                options: () => {
-                    return this.optionsMap['nld_measure_reason']
-                },
+                vocab: 'nld_measure_reason',
             },
             {
                 type: CUI.Input,
@@ -100,12 +94,10 @@ class NfisQuickEntryActionForm extends NfisQuickEntryForm {
                 textarea: true
             },
             {
-                type: NfisQuickEntrySearchableSelect,
+                type: NfisQuickEntryDanteSearchableSelect,
                 name: "firma",
                 form: { label: "Firma" },
-                options: () => {
-                    return this.optionsMap['nld_archaeological_service_provider']
-                },
+                vocab: 'nld_archaeological_service_provider',
             },
             {
                 type: NfisQuickEntrySearchableSelect,

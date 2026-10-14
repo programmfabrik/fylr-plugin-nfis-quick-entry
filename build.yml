@@ -8,6 +8,7 @@ webfrontend:
       - webfrontend/js/NfisQuickEntry.js
       - webfrontend/js/NfisQuickEntryForm.js
       - webfrontend/js/NfisQuickEntrySearchableSelect.js
+      - webfrontend/js/NfisQuickEntryDanteSearchableSelect.js
       - webfrontend/js/NfisQuickEntryNewForm.js
       - webfrontend/js/NfisQuickEntryObjectDateRangeForm.js
       - webfrontend/js/NfisQuickEntryObjectForm.js

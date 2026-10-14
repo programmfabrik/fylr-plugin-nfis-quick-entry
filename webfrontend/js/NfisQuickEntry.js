@@ -33,16 +33,13 @@ class NfisQuickEntry extends RootMenuApp {
                 { value: 'bremen', text: 'Bremen' },
             ],
             no_vocab: [{ value: null, text: 'Bitte zuerst Vokabular auswählen' }],
-            nld_gemarkung_niedersachsen: [{ value: null, text: 'Bitte auswählen' }],
-            nld_gemarkung_bremen: [{ value: null, text: 'Bitte auswählen' }],
             subset_nld_date_reliability: [{ value: null, text: 'Bitte auswählen' }],
-            nld_object_type: [{ value: null, text: 'Bitte auswählen' }],
-            nld_object_category: [{ value: null, text: 'Bitte auswählen' }],
-            nld_number_range: [{ value: null, text: 'Bitte auswählen' }],
-            subset_nld_actor_institution: [{ value: null, text: 'Bitte auswählen' }],
-            nld_measure_type: [{ value: null, text: 'Bitte auswählen' }],
-            nld_measure_reason: [{ value: null, text: 'Bitte auswählen' }],
-            nld_archaeological_service_provider: [{ value: null, text: 'Bitte auswählen' }],
+            // all other Dante-vocabulary-backed fields search live via
+            // NfisQuickEntryDanteSearchableSelect instead of being
+            // pre-loaded here - some vocabularies are far too large for that
+            // (nld_gemarkung_niedersachsen alone has ~5400 members, and the
+            // Dante API has no usable total count or offset beyond roughly
+            // the first 1000 items)
             personen_massnahmen: [{ value: null, text: 'Bitte auswählen' }]
         };
         this.objectTypeMaskMap = {
@@ -139,18 +136,7 @@ class NfisQuickEntry extends RootMenuApp {
 
         Promise.all([
             this.__getPoolIds(),
-            this.getOptionsFromDanteApi('nld_gemarkung_niedersachsen'),
-            this.getOptionsFromDanteApi('nld_gemarkung_bremen'),
-            this.getOptionsFromDanteApi('areal_unit_niedersachsen'),
-            this.getOptionsFromDanteApi('areal_unit_bremen'),
             this.getOptionsFromDanteApi('subset_nld_date_reliability'),
-            this.getOptionsFromDanteApi('nld_object_type'),
-            this.getOptionsFromDanteApi('nld_object_category'),
-            this.getOptionsFromDanteApi('nld_number_range'),
-            this.getOptionsFromDanteApi('subset_nld_actor_institution'),
-            this.getOptionsFromDanteApi('nld_measure_type'),
-            this.getOptionsFromDanteApi('nld_measure_reason'),
-            this.getOptionsFromDanteApi('nld_archaeological_service_provider'),
             this.getOptionsFromInternalList('personen_massnahmen'),
         ]).then(() => {
             this.setState('new')
@@ -412,8 +398,7 @@ class NfisQuickEntry extends RootMenuApp {
         const showButton = formData.gemarkung &&
             formData.politicalAffiliation &&
             formData.pool &&
-            formData.objectType &&
-            formData.objectCategory
+            formData.objectType
         if (showButton) {
             this.__newFormActionButton.show()
         } else {
@@ -780,8 +765,8 @@ class NfisQuickEntry extends RootMenuApp {
         }
 
         const formData = this.__getOrCreateForm(NfisQuickEntryNewForm).getData()
-        if (!formData.pool || !formData.politicalAffiliation || !formData.objectType || !formData.objectCategory) {
-            throw new Error('[NfisQuickEntry] createObject(): missing pool/politicalAffiliation/objectType/objectCategory from the start form data.')
+        if (!formData.pool || !formData.politicalAffiliation || !formData.objectType) {
+            throw new Error('[NfisQuickEntry] createObject(): missing pool/politicalAffiliation/objectType from the start form data.')
         }
         const url = '/api/v1/db/item?priority=2&format=long'
 
@@ -793,7 +778,6 @@ class NfisQuickEntry extends RootMenuApp {
 
         const dantePoliticalAffiliation = await this.getDanteJSKOS(formData.politicalAffiliation)
         const danteObjectType = await this.getDanteJSKOS(formData.objectType)
-        const danteObjectCategory = await this.getDanteJSKOS(formData.objectCategory)
         const danteDesignationEventType = await this.getDanteJSKOS("http://uri.gbv.de/terminology/object_related_event/978eb685-12d0-45d2-ac64-77bc64b7de0b");
         const danteDesignationEventStatus = await this.getDanteJSKOS("http://uri.gbv.de/terminology/nld_designation_status/7eb175f5-32cd-4849-a2dd-1d46e039fdc4");
         const flaeche = {
@@ -827,11 +811,7 @@ class NfisQuickEntry extends RootMenuApp {
                 "lk_objekttyp": danteObjectType,
                 "objekttyp_ergaenzung": null,
                 "lk_objekttyp_gesichert": null,
-                "_nested:item__objektkategorie": [
-                    {
-                        "lk_objektkategorie": danteObjectCategory
-                    }
-                ],
+                "_nested:item__objektkategorie": [],
                 "lk_obertaegig": null,
                 "erhaltene_hoehe_in_m": null,
                 "_nested:item__planung": [],

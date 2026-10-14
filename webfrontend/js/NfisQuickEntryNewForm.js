@@ -17,7 +17,6 @@ class NfisQuickEntryNewForm extends NfisQuickEntryForm {
             gemarkung: null,
             politicalAffiliation: null,
             objectType: null,
-            objectCategory: null,
         };
     }
 
@@ -50,16 +49,11 @@ class NfisQuickEntryNewForm extends NfisQuickEntryForm {
                 },
                 onDataChanged: (changedData, element) => {
                     console.log({ changedData, formData: this.getData() });
-                    if (changedData.vocab === 'niedersachsen') {
-                        data.gemarkung = this.optionsMap['nld_gemarkung_niedersachsen']?.[0]?.value || null
-                        data.politicalAffiliation = this.optionsMap['areal_unit_niedersachsen']?.[0]?.value || null
-
-                    }
-                    if (changedData.vocab === 'bremen') {
-                        data.gemarkung = this.optionsMap['nld_gemarkung_bremen']?.[0]?.value || null
-                        data.politicalAffiliation = this.optionsMap['areal_unit_bremen']?.[0]?.value || null
-
-                    }
+                    // gemarkung/politicalAffiliation are resolved via live
+                    // Dante search now, so there's no pre-loaded "first
+                    // option" to default to any more - just reset them
+                    data.gemarkung = null
+                    data.politicalAffiliation = null
 
                     // disabled is only evaluated once at field construction, CUI does not
                     // re-run it reactively, so we toggle the sibling field explicitly here
@@ -75,56 +69,43 @@ class NfisQuickEntryNewForm extends NfisQuickEntryForm {
                 }
             },
             {
-                type: NfisQuickEntrySearchableSelect,
+                type: NfisQuickEntryDanteSearchableSelect,
                 name: "gemarkung",
                 disabled: (context) => {
                     return isGemarkungDisabled(data.vocab)
                 },
                 form: { label: "Gemarkung" },
-                options: (context) => {
-                    const vocab = data.vocab;
-                    if (!vocab || vocab === 'no_vocab') return this.optionsMap['no_vocab'];
-                    if (vocab === 'niedersachsen') return this.optionsMap['nld_gemarkung_niedersachsen']
-                    if (vocab === 'bremen') return this.optionsMap['nld_gemarkung_bremen']
-                    return this.optionsMap['no_vocab']
+                vocab: () => {
+                    // the field is disabled (never focused/searched) unless
+                    // one of these two is true, so the fallback here is only
+                    // ever a placeholder to satisfy the mandatory opt
+                    if (data.vocab === 'bremen') return 'nld_gemarkung_bremen'
+                    return 'nld_gemarkung_niedersachsen'
                 },
                 onDataChanged: (changedData) => {
                     console.log({ changedData, formData: this.getData() });
                 }
             },
             {
-                type: NfisQuickEntrySearchableSelect,
+                type: NfisQuickEntryDanteSearchableSelect,
                 name: "politicalAffiliation",
                 disabled: (context) => {
                     return isGemarkungDisabled(data.vocab)
                 },
                 form: { label: "Gebietseinheit" },
-                options: (context) => {
-                    const vocab = data.vocab;
-                    if (!vocab || vocab === 'no_vocab') return this.optionsMap['no_vocab'];
-                    if (vocab === 'niedersachsen') return this.optionsMap['areal_unit_niedersachsen']
-                    if (vocab === 'bremen') return this.optionsMap['areal_unit_bremen']
-                    return this.optionsMap['no_vocab']
+                vocab: () => {
+                    if (data.vocab === 'bremen') return 'areal_unit_bremen'
+                    return 'areal_unit_niedersachsen'
                 },
                 onDataChanged: (changedData) => {
                     console.log({ changedData, formData: this.getData() });
                 }
             },
             {
-                type: NfisQuickEntrySearchableSelect,
+                type: NfisQuickEntryDanteSearchableSelect,
                 name: "objectType",
                 form: { label: "Objekttyp" },
-                options: () => {
-                    return this.optionsMap['nld_object_type']
-                },
-            },
-            {
-                type: NfisQuickEntrySearchableSelect,
-                name: "objectCategory",
-                form: { label: "Objektkategorie" },
-                options: () => {
-                    return this.optionsMap['nld_object_category']
-                },
+                vocab: 'nld_object_type',
             },
         ];
     }

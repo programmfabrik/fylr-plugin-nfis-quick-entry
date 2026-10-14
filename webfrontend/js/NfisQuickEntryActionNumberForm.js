@@ -20,7 +20,7 @@ class NfisQuickEntryActionNumberForm extends NfisQuickEntryForm {
 
     getDefaultData() {
         return {
-            einrichtung: this.optionsMap.nld_number_range?.[0]?.value || null,
+            einrichtung: null,
             jahr: '',
             nummer: null,
             zusatz: '',
@@ -30,12 +30,10 @@ class NfisQuickEntryActionNumberForm extends NfisQuickEntryForm {
     getFields() {
         return [
             {
-                type: NfisQuickEntrySearchableSelect,
+                type: NfisQuickEntryDanteSearchableSelect,
                 name: "einrichtung",
                 // form: { label: "Einrichtung" },
-                options: () => {
-                    return this.optionsMap['nld_number_range']
-                },
+                vocab: 'nld_number_range',
             },
             {
                 type: CUI.Input,
