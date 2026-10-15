@@ -7,12 +7,19 @@
 // both expect - simply isn't possible for those. Searching server-side as
 // the user types is the only option.
 //
+// Uses the /search endpoint (not /suggest), the same one
+// fylr-plugin-custom-data-type-dante/webfrontend/CustomDataTypeDante.coffee
+// uses, so we can replicate its "generate label with hierarchy" option: some
+// vocabularies have concepts with identical-looking prefLabels that are only
+// distinguishable by where they sit in the hierarchy.
+//
 // Drop-in usage:
 //   {
 //       type: NfisQuickEntryDanteSearchableSelect,
 //       name: "someField",
 //       form: { label: "..." },
 //       vocab: "nld_gemarkung_niedersachsen",
+//       label_with_hierarchy: true, // optional, default false
 //   }
 class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect {
 
@@ -28,6 +35,10 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
             vocab: {
                 mandatory: true,
                 check: (v) => CUI.util.isString(v) || CUI.util.isFunction(v)
+            },
+            label_with_hierarchy: {
+                default: false,
+                check: Boolean
             }
         });
     }
@@ -51,7 +62,18 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
         return this._vocab;
     }
 
-    // the Dante /suggest endpoint already filters server-side, on more than
+    // matches CustomDataTypeDante.coffee's own property list; "ancestors" is
+    // only requested when actually needed, since DANTEUtil.getHierarchieLabel
+    // is the only thing that reads it
+    __getProperties() {
+        let properties = '+hiddenLabel,notation,scopeNote,definition,identifier,example,location,depiction,startDate,endDate,startPlace,endPlace';
+        if (this._label_with_hierarchy) {
+            properties += ',ancestors';
+        }
+        return properties;
+    }
+
+    // the Dante /search endpoint already filters server-side, on more than
     // plain substrings (hidden labels, synonyms, accents, ...) - re-filtering
     // client-side on top risks hiding results it correctly matched
     __getFilteredOptions() {
@@ -70,13 +92,16 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
         return menuOpts;
     }
 
-    __parseSuggestResponse(json) {
-        const texts = json?.[1];
-        const uris = json?.[3];
-        if (!Array.isArray(texts) || !Array.isArray(uris)) {
+    // /search returns an array of JSKOS concepts directly (unlike /suggest's
+    // parallel-array shape)
+    __parseSearchResponse(json) {
+        if (!Array.isArray(json)) {
             return [];
         }
-        return texts.map((text, idx) => ({ text, value: uris[idx] }));
+        return json.map((jskos) => ({
+            text: DANTEUtil.getConceptNameFromJSKOSObject(jskos, 'de', this._label_with_hierarchy),
+            value: jskos.uri
+        }));
     }
 
     // debounced + abortable: __loadOptions() gets called on every keystroke
@@ -93,13 +118,23 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
         const deferred = new CUI.Deferred();
         this.__optionsPromise = deferred.promise();
 
+        const query = this.__filterText.trim();
+        if (!query) {
+            // mirrors CustomDataTypeDante.coffee: /search (unlike /suggest)
+            // isn't meant to be queried empty - there's nothing useful to
+            // show until the user actually types something
+            this.__options = [];
+            deferred.resolve(this.__options);
+            return this.__optionsPromise;
+        }
+
         this.__debounceTimer = setTimeout(() => {
             const controller = new AbortController();
             this.__abortController = controller;
 
-            const search = encodeURIComponent(this.__filterText.trim());
             const vocab = encodeURIComponent(this.__getVocab());
-            const url = `https://api.dante.gbv.de/suggest?search=${search}&voc=${vocab}&language=de&limit=50&cache=0&ancestors=`;
+            const properties = encodeURIComponent(this.__getProperties());
+            const url = `https://api.dante.gbv.de/search?query=${encodeURIComponent(query)}&properties=${properties}&voc=${vocab}&language=de&limit=50&cache=0&offset=0&ancestors=`;
 
             fetch(url, { signal: controller.signal }).then((response) => {
                 if (!response.ok) {
@@ -107,7 +142,7 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
                 }
                 return response.json();
             }).then((json) => {
-                this.__options = this.__parseSuggestResponse(json);
+                this.__options = this.__parseSearchResponse(json);
                 deferred.resolve(this.__options);
             }).catch((error) => {
                 if (error.name === 'AbortError') {
@@ -115,7 +150,7 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
                     // superseded us will resolve this.__optionsPromise instead
                     return;
                 }
-                console.error(`[NfisQuickEntryDanteSearchableSelect] failed to load vocab "${vocab}"`, error);
+                console.error(`[NfisQuickEntryDanteSearchableSelect] failed to search vocab "${vocab}"`, error);
                 this.__options = [];
                 deferred.resolve(this.__options);
             });
@@ -150,7 +185,8 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
 
     async __resolveLabelForValue(uri) {
         try {
-            const response = await fetch('https://api.dante.gbv.de/data?cache=1&uri=' + encodeURIComponent(uri) + '&properties=');
+            const properties = encodeURIComponent(this.__getProperties());
+            const response = await fetch(`https://api.dante.gbv.de/data?cache=1&uri=${encodeURIComponent(uri)}&properties=${properties}`);
             if (!response.ok) {
                 console.error(`[NfisQuickEntryDanteSearchableSelect] failed to resolve label for "${uri}": ${response.status} ${response.statusText}`);
                 return null;
@@ -160,7 +196,7 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
             if (!jskos) {
                 return null;
             }
-            return DANTEUtil.getConceptNameFromJSKOSObject(jskos, 'de');
+            return DANTEUtil.getConceptNameFromJSKOSObject(jskos, 'de', this._label_with_hierarchy);
         } catch (error) {
             console.error(`[NfisQuickEntryDanteSearchableSelect] failed to resolve label for "${uri}"`, error);
             return null;

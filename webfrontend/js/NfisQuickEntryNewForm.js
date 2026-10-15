@@ -80,6 +80,7 @@ class NfisQuickEntryNewForm extends NfisQuickEntryForm {
                     if (data.vocab === 'bremen') return 'areal_unit_bremen'
                     return 'areal_unit_niedersachsen'
                 },
+                label_with_hierarchy: true,
                 onDataChanged: (changedData) => {
                     console.log({ changedData, formData: this.getData() });
                 }
