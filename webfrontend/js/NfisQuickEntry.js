@@ -24,7 +24,6 @@ class NfisQuickEntry extends RootMenuApp {
         this.poolIds = [];
         this.optionsMap = {
             vocab: [
-                { value: 'no_vocab', text: 'Bitte auswählen' },
                 { value: 'niedersachsen', text: 'Niedersachsen' },
                 { value: 'bremen', text: 'Bremen' },
             ],

@@ -13,7 +13,7 @@ class NfisQuickEntryNewForm extends NfisQuickEntryForm {
     getDefaultData() {
         return {
             pool: null,
-            vocab: 'no_vocab',
+            vocab: 'niedersachsen',
             gemarkung: null,
             politicalAffiliation: null,
             objectType: null,
@@ -22,10 +22,6 @@ class NfisQuickEntryNewForm extends NfisQuickEntryForm {
 
     getFields() {
         const data = this.getData();
-
-        const isGemarkungDisabled = (vocab) => {
-            return vocab === 'no_vocab' || !['niedersachsen', 'bremen'].includes(vocab)
-        }
 
         return [
             {
@@ -59,21 +55,11 @@ class NfisQuickEntryNewForm extends NfisQuickEntryForm {
                     // re-run it reactively, so we toggle the sibling field explicitly here
                     const gemarkungField = element.getOtherField('gemarkung')
                     const politicalAffiliationField = element.getOtherField('politicalAffiliation')
-                    if (isGemarkungDisabled(data.vocab)) {
-                        gemarkungField?.disable()
-                        politicalAffiliationField?.disable()
-                    } else {
-                        gemarkungField?.enable()
-                        politicalAffiliationField?.enable()
-                    }
                 }
             },
             {
                 type: NfisQuickEntryDanteSearchableSelect,
                 name: "gemarkung",
-                disabled: (context) => {
-                    return isGemarkungDisabled(data.vocab)
-                },
                 form: { label: "Gemarkung" },
                 vocab: () => {
                     // the field is disabled (never focused/searched) unless
@@ -89,9 +75,6 @@ class NfisQuickEntryNewForm extends NfisQuickEntryForm {
             {
                 type: NfisQuickEntryDanteSearchableSelect,
                 name: "politicalAffiliation",
-                disabled: (context) => {
-                    return isGemarkungDisabled(data.vocab)
-                },
                 form: { label: "Gebietseinheit" },
                 vocab: () => {
                     if (data.vocab === 'bremen') return 'areal_unit_bremen'
