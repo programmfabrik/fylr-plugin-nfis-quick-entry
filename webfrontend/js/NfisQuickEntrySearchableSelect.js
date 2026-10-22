@@ -113,10 +113,6 @@ class NfisQuickEntrySearchableSelect extends CUI.DataFieldInput {
             element: this,
             use_element_width_as_min_width: true,
             backdrop: { policy: 'click-thru' },
-            onHide: () => {
-                this.__filterText = '';
-                this.displayValue();
-            },
             itemList: {
                 items: () => this.__getFilteredOptions(),
                 has_items: true,
@@ -127,6 +123,13 @@ class NfisQuickEntrySearchableSelect extends CUI.DataFieldInput {
                 // selection, and onClick is simpler to reason about here
                 onClick: (event, btn, item, idx) => {
                     this.storeValue(item.value);
+                    // only a real selection resets the filter - closing the
+                    // menu without picking anything (Esc, clicking the
+                    // chevron, blurring) must leave the typed search alone,
+                    // so reopening shows the same results instead of an
+                    // empty box
+                    this.__filterText = '';
+                    this.displayValue();
                     this.__menu.hide();
                 }
             }
@@ -220,9 +223,17 @@ class NfisQuickEntrySearchableSelect extends CUI.DataFieldInput {
                 if (this.__suppressOpenOnFocus) {
                     return;
                 }
-                // show the current selection as a placeholder and clear the
-                // box, so the user can start typing a new filter right away
-                // instead of having to clear the old value out first
+                // if the menu was closed mid-search (Esc, the chevron,
+                // blurring) without picking anything, __filterText is still
+                // whatever was typed - resume it as-is instead of clearing
+                // it back out, so reopening shows the same results again
+                if (this.__filterText) {
+                    this.__openMenu(ev);
+                    return;
+                }
+                // otherwise show the current selection as a placeholder and
+                // clear the box, so the user can start typing a new filter
+                // right away instead of having to clear the old value out
                 const currentText = this.__input.getValue();
                 if (currentText) {
                     this.__input.setPlaceholder(currentText);
@@ -246,6 +257,13 @@ class NfisQuickEntrySearchableSelect extends CUI.DataFieldInput {
                         return;
                     }
                     this.__menu?.hide();
+                    // an in-progress, unconfirmed search (__filterText) is
+                    // preserved on blur so reopening can resume it - that
+                    // would be pointless if we overwrote the visible text
+                    // with the stored value's label right here
+                    if (this.__filterText) {
+                        return;
+                    }
                     this.displayValue();
                 }, 150);
             }

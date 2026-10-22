@@ -48,6 +48,11 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
         this.__selectedOption = null;
         this.__debounceTimer = null;
         this.__abortController = null;
+        // caches the last successful fetch, so closing and reopening the
+        // menu without changing anything doesn't re-hit the network
+        this.__lastQuery = null;
+        this.__lastVocab = null;
+        this.__lastResults = null;
     }
 
     // nothing is pre-loaded, so there is no "first option" to default to
@@ -92,6 +97,43 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
         return menuOpts;
     }
 
+    // shown while __loadOptions()'s debounce + network round trip is in
+    // flight - matches CustomDataTypeDante.coffee's own suggestion-loading
+    // placeholder
+    __getLoadingOptions() {
+        return [{
+            text: 'Lädt…',
+            icon_left: new CUI.Icon({ class: 'fa-spinner fa-spin' }),
+            disabled: true
+        }];
+    }
+
+    __showOrRefilterMenu(event) {
+        if (this.isDisabled()) {
+            return;
+        }
+        if (!this.__menu) {
+            this.__menu = new CUI.Menu(this.__getMenuOpts());
+        }
+        if (this.__menu.isShown()) {
+            this.__refilterMenu(event);
+        } else {
+            this.__menu.show(event);
+        }
+    }
+
+    // overrides the base class to show a loading placeholder immediately,
+    // rather than leaving the dropdown looking empty/broken for the length
+    // of the debounce delay plus the actual network request
+    __openMenu(event) {
+        this.__options = this.__getLoadingOptions();
+        this.__showOrRefilterMenu(event);
+
+        return this.__loadOptions(event).done(() => {
+            this.__showOrRefilterMenu(event);
+        });
+    }
+
     // /search returns an array of JSKOS concepts directly (unlike /suggest's
     // parallel-array shape)
     __parseSearchResponse(json) {
@@ -115,26 +157,29 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
             this.__abortController.abort();
         }
 
-        const deferred = new CUI.Deferred();
-        this.__optionsPromise = deferred.promise();
-
         const query = this.__filterText.trim();
-        if (!query) {
-            // mirrors CustomDataTypeDante.coffee: /search (unlike /suggest)
-            // isn't meant to be queried empty - there's nothing useful to
-            // show until the user actually types something
-            this.__options = [];
-            deferred.resolve(this.__options);
+        const vocab = this.__getVocab();
+
+        // closing and reopening the menu (or re-focusing after a blur)
+        // without typing anything new re-runs __openMenu()/__loadOptions(),
+        // but if neither the query nor the (possibly data-dependent) vocab
+        // actually changed, the last fetch's results are still correct
+        if (this.__lastResults && this.__lastQuery === query && this.__lastVocab === vocab) {
+            this.__options = this.__lastResults;
+            this.__optionsPromise = CUI.resolvedPromise(this.__options);
             return this.__optionsPromise;
         }
+
+        const deferred = new CUI.Deferred();
+        this.__optionsPromise = deferred.promise();
 
         this.__debounceTimer = setTimeout(() => {
             const controller = new AbortController();
             this.__abortController = controller;
 
-            const vocab = encodeURIComponent(this.__getVocab());
+            const encodedVocab = encodeURIComponent(vocab);
             const properties = encodeURIComponent(this.__getProperties());
-            const url = `https://api.dante.gbv.de/search?query=${encodeURIComponent(query)}&properties=${properties}&voc=${vocab}&language=de&limit=50&cache=0&offset=0&ancestors=`;
+            const url = `https://api.dante.gbv.de/search?query=${encodeURIComponent(query)}&properties=${properties}&voc=${encodedVocab}&language=de&limit=50&cache=0&offset=0&ancestors=`;
 
             fetch(url, { signal: controller.signal }).then((response) => {
                 if (!response.ok) {
@@ -143,6 +188,9 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
                 return response.json();
             }).then((json) => {
                 this.__options = this.__parseSearchResponse(json);
+                this.__lastQuery = query;
+                this.__lastVocab = vocab;
+                this.__lastResults = this.__options;
                 deferred.resolve(this.__options);
             }).catch((error) => {
                 if (error.name === 'AbortError') {
@@ -150,8 +198,10 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
                     // superseded us will resolve this.__optionsPromise instead
                     return;
                 }
-                console.error(`[NfisQuickEntryDanteSearchableSelect] failed to search vocab "${vocab}"`, error);
+                console.error(`[NfisQuickEntryDanteSearchableSelect] failed to search vocab "${encodedVocab}"`, error);
                 this.__options = [];
+                // deliberately not cached - a failed fetch should be retried
+                // next time, not "confirmed" as the empty-results answer
                 deferred.resolve(this.__options);
             });
         }, 300);
