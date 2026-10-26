@@ -117,7 +117,6 @@ class NfisQuickEntry extends RootMenuApp {
 
     load() {
         super.load();
-        this.__getNextNumber('a')
         this.__plugin = ez5.pluginManager.getPlugin("fylr-plugin-nfis-quick-entry");
         this.__loadInitialData()
         this.__updateLayout()
@@ -134,9 +133,9 @@ class NfisQuickEntry extends RootMenuApp {
             this.getOptionsFromDanteApi('subset_nld_date_reliability'),
             this.getOptionsFromInternalList('personen_massnahmen'),
         ]).then(() => {
-            this.setState('new')
+            // this.setState('new')
             // this.setState('object') // debug
-            // this.setState('action') // debug
+            this.setState('action') // debug
         }).catch((error) => {
             console.error('[NfisQuickEntry] failed to load initial data', error)
             this.__loadError = error?.message || String(error)
@@ -687,66 +686,54 @@ class NfisQuickEntry extends RootMenuApp {
         }
     }
 
-    async getCreationEvents(dates) {
-        const dateReliabilityMap = {}
-        const events = [];
+    async getCreationEvent(zeitstellung, datierungVerbal) {
+
+        if (!zeitstellung && !datierungVerbal) return null
+
         // Event-Typ Entstehung
         const eventType = await this.getDanteJSKOS("http://uri.gbv.de/terminology/object_related_event/4d52f1c2-2d21-44cb-8097-63d5ac7c1d40")
+        const zeitstellungJskos = zeitstellung ? await this.getDanteJSKOS(zeitstellung) : null
 
-        for (let i = 0; i < dates.length; i++) {
-            const date = dates[i];
-            if (!date.from || !date.to) continue;
-            if (!dateReliabilityMap[date.dateReliabilityFrom]) {
-                dateReliabilityMap[date.dateReliabilityFrom] = await this.getDanteJSKOS(date.dateReliabilityFrom)
-            }
-            if (!dateReliabilityMap[date.dateReliabilityTo]) {
-                dateReliabilityMap[date.dateReliabilityTo] = await this.getDanteJSKOS(date.dateReliabilityTo)
-            }
-
-            events.push({
-                "lk_eventtyp": eventType,
-                "lk_veroeffentlichen": {
-                    "_objecttype": "ja_nein_objekttyp",
-                    "_mask": "ja_nein_objekttyp__all_fields",
-                    "_global_object_id": "827@0437869f-aa50-498f-a0a5-a3b02be67dcc",
-                    "ja_nein_objekttyp": {
-                        "_id": 1
-                    }
-                },
-                "titel": null,
-                "lk_baumassnahmenart": null,
-                "_nested:item__event__nutzungsart": [],
-                "lk_status": null,
-                "lk_datum_von_sicherheit": dateReliabilityMap[date.dateReliabilityFrom],
-                "datumsbereich": {
-                    "from": date.from,
-                    "to": date.to
-                },
-                "lk_datum_bis_sicherheit": dateReliabilityMap[date.dateReliabilityTo],
-                "datierung_verbal": null,
-                "lk_zeitstellung": null,
-                "lk_zeitstellung_genauigkeit": null,
-                "lk_kultur": null,
-                "lk_kultur_genauigkeit": null,
-                "bemerkung": null,
-                "bemerkung_verfasser": null,
-                "bemerkung_datum": null,
-                "datum_ausweisung_beginn": null,
-                "datum_benachrichtigung": null,
-                "lk_ausweisungsursache": null,
-                "lk_ausweisungsstelle": null,
-                "datum_rechtsgrundlage": null,
-                "uri_rechtsgrundlage": null,
-                "_nested:item__event__bedeutung": [],
-                "_nested:item__event__schutzgruende": [],
-                "_nested:item__event__person_institution": [],
-                "_nested:item__event__ort": [],
-                "ausgangszustand": null,
-                "lk_bilddatenbank": null
-            })
+        const event = {
+            "lk_eventtyp": eventType,
+            "lk_veroeffentlichen": {
+                "_objecttype": "ja_nein_objekttyp",
+                "_mask": "ja_nein_objekttyp__all_fields",
+                "_global_object_id": "827@0437869f-aa50-498f-a0a5-a3b02be67dcc",
+                "ja_nein_objekttyp": {
+                    "_id": 1
+                }
+            },
+            "titel": null,
+            "lk_baumassnahmenart": null,
+            "_nested:item__event__nutzungsart": [],
+            "lk_status": null,
+            "lk_datum_von_sicherheit": null,
+            "datumsbereich": null,
+            "lk_datum_bis_sicherheit": null,
+            "datierung_verbal": datierungVerbal || null,
+            "lk_zeitstellung": zeitstellungJskos,
+            "lk_zeitstellung_genauigkeit": null,
+            "lk_kultur": null,
+            "lk_kultur_genauigkeit": null,
+            "bemerkung": null,
+            "bemerkung_verfasser": null,
+            "bemerkung_datum": null,
+            "datum_ausweisung_beginn": null,
+            "datum_benachrichtigung": null,
+            "lk_ausweisungsursache": null,
+            "lk_ausweisungsstelle": null,
+            "datum_rechtsgrundlage": null,
+            "uri_rechtsgrundlage": null,
+            "_nested:item__event__bedeutung": [],
+            "_nested:item__event__schutzgruende": [],
+            "_nested:item__event__person_institution": [],
+            "_nested:item__event__ort": [],
+            "ausgangszustand": null,
+            "lk_bilddatenbank": null
         }
 
-        return events
+        return event
     }
 
     async createFlaeche() {
@@ -962,11 +949,10 @@ class NfisQuickEntry extends RootMenuApp {
 
         const descriptions = structuredClone(object.item["_nested:item__beschreibung"] || []);
         const annotations = structuredClone(object.item["_nested:item__anmerkung_intern"] || []);
-        const events = structuredClone(object.item["_nested:item__event"] || []);
+        let events = structuredClone(object.item["_nested:item__event"] || []);
 
         // Beschreibung
         if (formData.fundstelleBeschreibung) {
-            // TODO: Not sure if that's the correct description type => ask to make sure
             const descriptionType = await this.getDanteJSKOS("http://uri.gbv.de/terminology/nld_description_type/3000dc03-7089-45ad-8f62-170c34d3f8b8")
 
             descriptions.push({
@@ -1026,12 +1012,14 @@ class NfisQuickEntry extends RootMenuApp {
 
 
         // Ereignisse (Entstehungen)
-        const creationEvents = await this.getCreationEvents(formData.datierungen)
-
+        const creationEvent = await this.getCreationEvent(formData.zeitstellung, formData.datierungVerbal)
+        if (creationEvent) {
+            events = [creationEvent, ...events]
+        }
 
         object.item["_nested:item__beschreibung"] = descriptions
         object.item["_nested:item__anmerkung_intern"] = annotations
-        object.item["_nested:item__event"] = [...creationEvents, ...events]
+        object.item["_nested:item__event"] = events
 
         const payload = [object]
         const responseJson = await this.sendDataToApi(url, payload)
@@ -1039,7 +1027,6 @@ class NfisQuickEntry extends RootMenuApp {
     }
 
     async createAction() {
-        // TODO: check which fields are mandatory and only include the others in payload if they are set.
         if (!this.createdFlaeche || !this.createdObject) {
             throw new Error('[NfisQuickEntry] createAction(): called before createFlaeche()/createObject() succeeded - no Fläche/Objekt to link the Maßnahme to.')
         }
@@ -1128,7 +1115,6 @@ class NfisQuickEntry extends RootMenuApp {
 
         // Beschreibungen
         if (formData.fundstelleBeschreibung) {
-            // TODO: Not sure if that's the correct description type => ask to make sure
             const descriptionType = await this.getDanteJSKOS("http://uri.gbv.de/terminology/nld_description_type/3000dc03-7089-45ad-8f62-170c34d3f8b8")
             descriptions.push({
                 "lk_beschreibungstyp": descriptionType,
@@ -1147,7 +1133,6 @@ class NfisQuickEntry extends RootMenuApp {
             })
         }
         if (formData.fundstelleBeschreibung) {
-            // TODO: Not sure if that's the correct description type => ask to make sure
             const descriptionType = await this.getDanteJSKOS("http://uri.gbv.de/terminology/nld_description_type/da454480-a678-4c05-8db5-165dce88f95e")
             descriptions.push({
                 "lk_beschreibungstyp": descriptionType,

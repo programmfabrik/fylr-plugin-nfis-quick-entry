@@ -143,6 +143,10 @@
             align-items: flex-start;
             flex-wrap: wrap;
 
+            .cui-nfis-quick-entry-dante-searchable-select {
+                width: 100%;
+            }
+
             &>.cui-form-row {
                 margin-bottom: 0;
                 flex-direction: row;

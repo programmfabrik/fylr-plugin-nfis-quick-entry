@@ -10,6 +10,10 @@ class NfisQuickEntryNewForm extends NfisQuickEntryForm {
         return "startForm";
     }
 
+    getClass() {
+        return "nfis-quick-entry-new-form";
+    }
+
     getDefaultData() {
         return {
             pool: null,

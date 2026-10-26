@@ -10,23 +10,12 @@ class NfisQuickEntryObjectForm extends NfisQuickEntryForm {
         return "objectForm";
     }
 
+    getClass() {
+        return "nfis-quick-entry-object-form";
+    }
+
     getSubForms() {
-        return [
-            {
-                // TODO: Change to non-repeating form since validation doesn't allow multiple creation events
-                form: new NfisQuickEntryRepeatingForm({
-                    name: 'datierungen',
-                    rowFormClass: NfisQuickEntryObjectDateRangeForm,
-                    rowFormOpts: {
-                        poolIds: this.poolIds,
-                        optionsMap: this.optionsMap,
-                    },
-                    addButtonText: 'Datierung hinzufügen',
-                    minRows: 1,
-                }),
-                position: 'above'
-            }
-        ];
+        return [];
     }
 
     getDefaultData() {
@@ -36,6 +25,8 @@ class NfisQuickEntryObjectForm extends NfisQuickEntryForm {
             String(today.getDate()).padStart(2, '0');
 
         return {
+            zeitstellung: null,
+            datierungVerbal: '',
             lagebeschreibung: '',
             fundstelleBeschreibung: '',
             datierung: '',
@@ -56,6 +47,21 @@ class NfisQuickEntryObjectForm extends NfisQuickEntryForm {
 
 
         return [
+            {
+                type: NfisQuickEntryDanteSearchableSelect,
+                name: "zeitstellung",
+                form: { label: "Zeitstellung" },
+                vocab: 'nld_chronology',
+                onDataChanged: (changedData) => {
+                    console.log({ changedData, formData: this.getData() });
+                }
+            },
+
+            {
+                type: CUI.Input,
+                name: 'datierungVerbal',
+                form: { label: 'Datierung verbal' },
+            },
             {
                 type: CUI.Input,
                 name: 'lagebeschreibung',
