@@ -7,7 +7,7 @@
 // both expect - simply isn't possible for those. Searching server-side as
 // the user types is the only option.
 //
-// Uses the /search endpoint (not /suggest), the same one
+// Uses the /search endpoint, the same one
 // fylr-plugin-custom-data-type-dante/webfrontend/CustomDataTypeDante.coffee
 // uses, so we can replicate its "generate label with hierarchy" option: some
 // vocabularies have concepts with identical-looking prefLabels that are only
@@ -18,7 +18,7 @@
 //       type: NfisQuickEntryDanteSearchableSelect,
 //       name: "someField",
 //       form: { label: "..." },
-//       vocab: "nld_gemarkung_niedersachsen",
+//       vocab: "vocab_name",
 //       label_with_hierarchy: true, // optional, default false
 //   }
 class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect {
@@ -58,6 +58,23 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
     // nothing is pre-loaded, so there is no "first option" to default to
     getDefaultValue() {
         return null;
+    }
+
+    render() {
+        super.render();
+        // kicks off __preloadOptions() - a no-op here if the field starts
+        // disabled (e.g. gemarkung before a region is picked); enable()
+        // below covers that case once it actually becomes usable
+        this.__preloadOptions();
+    }
+
+    enable() {
+        super.enable();
+        // fields whose vocab depends on other data (gemarkung,
+        // politicalAffiliation) are disabled at render() time, so they never
+        // got the chance to preload then - do it now that they can actually
+        // be used
+        this.__preloadOptions();
     }
 
     __getVocab() {
@@ -146,6 +163,70 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
         }));
     }
 
+    // the actual network call, shared by __loadOptions() (debounced, user
+    // driven) and __preloadOptions() (immediate, fired once up front) - on
+    // success, updates both this.__options and the this.__last* cache; on
+    // any error other than an abort, resolves to [] rather than rejecting,
+    // so callers don't each need their own fallback-to-empty handling
+    __fetchOptions(query, vocab) {
+        const controller = new AbortController();
+        this.__abortController = controller;
+
+        const encodedVocab = encodeURIComponent(vocab);
+        const properties = encodeURIComponent(this.__getProperties());
+        const url = `https://api.dante.gbv.de/search?query=${encodeURIComponent(query)}&properties=${properties}&voc=${encodedVocab}&language=de&limit=50&cache=0&offset=0&ancestors=`;
+
+        return fetch(url, { signal: controller.signal }).then((response) => {
+            if (!response.ok) {
+                throw new Error(`request failed with status ${response.status} ${response.statusText}`);
+            }
+            return response.json();
+        }).then((json) => {
+            // always offered first, so a selection can be cleared once made
+            const options = [this.__getUnselectOption(), ...this.__parseSearchResponse(json)];
+            this.__options = options;
+            this.__lastQuery = query;
+            this.__lastVocab = vocab;
+            this.__lastResults = options;
+            return options;
+        }).catch((error) => {
+            if (error.name === 'AbortError') {
+                // let the caller tell an abort (superseded by a newer
+                // request) apart from a genuine failure
+                throw error;
+            }
+            console.error(`[NfisQuickEntryDanteSearchableSelect] failed to search vocab "${encodedVocab}"`, error);
+            this.__options = [this.__getUnselectOption()];
+            // deliberately not cached - a failed fetch should be retried
+            // next time, not "confirmed" as the empty-results answer
+            return this.__options;
+        });
+    }
+
+    // fires once, immediately (no debounce), as soon as the field is
+    // usable, so the very first click/focus can show results right away
+    // instead of sitting through the debounce + network round trip that
+    // typing normally goes through
+    __preloadOptions() {
+        if (this.isDisabled()) {
+            return;
+        }
+
+        const vocab = this.__getVocab();
+        if (this.__lastResults && this.__lastQuery === '' && this.__lastVocab === vocab) {
+            // already preloaded (e.g. enable() firing again for the same
+            // resolved vocab) - nothing to do
+            return;
+        }
+
+        this.__fetchOptions('', vocab).catch(() => {
+            // ignore here - genuine failures are already logged inside
+            // __fetchOptions(), and an abort just means the user already
+            // started interacting before this resolved, which hands off to
+            // __loadOptions() anyway
+        });
+    }
+
     // debounced + abortable: __loadOptions() gets called on every keystroke
     // (via onDataChanged -> __openMenu), and without this a fast typist would
     // pile up requests, with a slow/stale one free to overwrite a newer result
@@ -174,35 +255,12 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
         this.__optionsPromise = deferred.promise();
 
         this.__debounceTimer = setTimeout(() => {
-            const controller = new AbortController();
-            this.__abortController = controller;
-
-            const encodedVocab = encodeURIComponent(vocab);
-            const properties = encodeURIComponent(this.__getProperties());
-            const url = `https://api.dante.gbv.de/search?query=${encodeURIComponent(query)}&properties=${properties}&voc=${encodedVocab}&language=de&limit=50&cache=0&offset=0&ancestors=`;
-
-            fetch(url, { signal: controller.signal }).then((response) => {
-                if (!response.ok) {
-                    throw new Error(`request failed with status ${response.status} ${response.statusText}`);
-                }
-                return response.json();
-            }).then((json) => {
-                this.__options = this.__parseSearchResponse(json);
-                this.__lastQuery = query;
-                this.__lastVocab = vocab;
-                this.__lastResults = this.__options;
-                deferred.resolve(this.__options);
-            }).catch((error) => {
-                if (error.name === 'AbortError') {
-                    // superseded by a newer keystroke - whatever request
-                    // superseded us will resolve this.__optionsPromise instead
-                    return;
-                }
-                console.error(`[NfisQuickEntryDanteSearchableSelect] failed to search vocab "${encodedVocab}"`, error);
-                this.__options = [];
-                // deliberately not cached - a failed fetch should be retried
-                // next time, not "confirmed" as the empty-results answer
-                deferred.resolve(this.__options);
+            this.__fetchOptions(query, vocab).then((options) => {
+                deferred.resolve(options);
+            }).catch(() => {
+                // only an AbortError reaches here (__fetchOptions already
+                // handles/logs other failures) - superseded by a newer
+                // request, which will resolve this.__optionsPromise instead
             });
         }, 300);
 
@@ -218,7 +276,7 @@ class NfisQuickEntryDanteSearchableSelect extends NfisQuickEntrySearchableSelect
 
         const value = this.getValue();
         if (CUI.util.isNull(value)) {
-            this.__input?.setValue(this._empty_text || '');
+            this.__input?.setValue(this._empty_text || this.__getUnselectOption().text);
             return;
         }
 

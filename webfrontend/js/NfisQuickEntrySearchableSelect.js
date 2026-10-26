@@ -93,19 +93,28 @@ class NfisQuickEntrySearchableSelect extends CUI.DataFieldInput {
         this.__optionsPromise = CUI.util.isPromise(ret) ? ret : CUI.resolvedPromise(ret);
 
         return this.__optionsPromise.done((options) => {
-            this.__options = options;
             const firstWithValue = options.find((opt) => !CUI.util.isUndef(opt.value));
             this.__defaultValue = firstWithValue ? firstWithValue.value : null;
+            // always offered first, so a selection can be cleared once
+            // made - without this, once a value is picked there's no way
+            // back to "nothing selected"
+            this.__options = [this.__getUnselectOption(), ...options];
         });
+    }
+
+    // the one fixed entry every list gets, regardless of what options/vocab
+    // provides
+    __getUnselectOption() {
+        return { value: null, text: 'Bitte auswählen' };
     }
 
     __getFilteredOptions() {
         const filter = this.__filterText.trim().toLowerCase();
-        const options = this.getOptions();
+        const [unselectOption, ...options] = this.getOptions();
         if (!filter) {
-            return options;
+            return [unselectOption, ...options];
         }
-        return options.filter((opt) => (opt.text || '').toLowerCase().includes(filter));
+        return [unselectOption, ...options.filter((opt) => (opt.text || '').toLowerCase().includes(filter))];
     }
 
     __getMenuOpts() {
