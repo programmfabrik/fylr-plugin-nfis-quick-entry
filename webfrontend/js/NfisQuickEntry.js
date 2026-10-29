@@ -43,6 +43,7 @@ class NfisQuickEntry extends RootMenuApp {
         this.__newFormActionButton = null;
         this.__objectFormActionButton = null;
         this.__actionFormActionButton = null;
+        this.__nextNumberLabel = null;
 
         this.__incrementerObject = null;
 
@@ -243,11 +244,13 @@ class NfisQuickEntry extends RootMenuApp {
     __getVerticalListLayoutContentForNewState() {
         const form = this.__getOrCreateForm(NfisQuickEntryNewForm, (formData) => {
             this.__updateNewFormActionButtonVisibility(formData)
-            this.__getNextNumber(formData.gemarkung).then(nextNumber => {
-                console.log(nextNumber);
-            })
-
+            this.__updateNextNumberLabel(formData)
         })
+
+        if (!this.__nextNumberLabel) {
+            this.__nextNumberLabel = new CUI.Label({})
+        }
+        this.__updateNextNumberLabel(form.getData())
 
         if (!this.__newFormActionButton) {
             this.__newFormActionButton = new CUI.Button({
@@ -275,6 +278,7 @@ class NfisQuickEntry extends RootMenuApp {
         this.__updateNewFormActionButtonVisibility(form.getData())
 
         return [
+            this.__nextNumberLabel,
             form.render(),
             new CUI.HorizontalLayout({
                 right: {
@@ -460,6 +464,49 @@ class NfisQuickEntry extends RootMenuApp {
         }
     }
 
+    __updateNextNumberLabel(formData) {
+        if (!this.__nextNumberLabel) {
+            return
+        }
+
+        const prefix = 'Voraussichtliche Fundstellennummer: '
+
+        if (!formData.gemarkung) {
+            this.__nextNumberLabel.setContent([
+                CUI.dom.text(prefix),
+                CUI.dom.text('Bitte Gemarkung auswählen.')
+            ])
+            return
+        }
+
+        this.__nextNumberLabel.setContent([
+            CUI.dom.text(prefix),
+            new CUI.Icon({ class: 'fa-spinner fa-spin' })
+        ])
+
+        const gemarkung = formData.gemarkung
+        this.__getNextNumber(gemarkung).then((nextNumber) => {
+            // gemarkung may have changed again while this request was in
+            // flight - only apply a result that's still current
+            if (this.__getOrCreateForm(NfisQuickEntryNewForm).getData().gemarkung !== gemarkung) {
+                return
+            }
+            this.__nextNumberLabel.setContent([
+                CUI.dom.text(prefix),
+                CUI.dom.text(String(nextNumber))
+            ])
+        }).catch((error) => {
+            console.error('[NfisQuickEntry] failed to compute the next Fundstellennummer', error)
+            if (this.__getOrCreateForm(NfisQuickEntryNewForm).getData().gemarkung !== gemarkung) {
+                return
+            }
+            this.__nextNumberLabel.setContent([
+                CUI.dom.text(prefix),
+                CUI.dom.text('Fehler beim Laden.')
+            ])
+        })
+    }
+
     __getTitleElement() {
         const element = CUI.dom.h4('h4')
         element.textContent = this.title
@@ -512,6 +559,7 @@ class NfisQuickEntry extends RootMenuApp {
         this.__newFormActionButton = null;
         this.__objectFormActionButton = null;
         this.__actionFormActionButton = null;
+        this.__nextNumberLabel = null;
         this.createdFlaeche = null;
         this.createdObject = null;
         this.createdAction = null;
