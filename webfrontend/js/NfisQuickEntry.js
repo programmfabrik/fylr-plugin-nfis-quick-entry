@@ -512,6 +512,10 @@ class NfisQuickEntry extends RootMenuApp {
         this.__newFormActionButton = null;
         this.__objectFormActionButton = null;
         this.__actionFormActionButton = null;
+        this.createdFlaeche = null;
+        this.createdObject = null;
+        this.createdAction = null;
+        this.__incrementerObject = null;
     }
 
     setState(newState) {
