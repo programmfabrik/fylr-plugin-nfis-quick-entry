@@ -248,7 +248,9 @@ class NfisQuickEntry extends RootMenuApp {
         })
 
         if (!this.__nextNumberLabel) {
-            this.__nextNumberLabel = new CUI.Label({})
+            this.__nextNumberLabel = new CUI.Label({
+                class: 'nfis-quick-entry-next-number-label'
+            })
         }
         this.__updateNextNumberLabel(form.getData())
 
