@@ -44,6 +44,8 @@ class NfisQuickEntry extends RootMenuApp {
         this.__objectFormActionButton = null;
         this.__actionFormActionButton = null;
 
+        this.__incrementerObject = null;
+
     }
 
     static is_allowed() {
@@ -133,9 +135,9 @@ class NfisQuickEntry extends RootMenuApp {
             this.getOptionsFromDanteApi('subset_nld_date_reliability'),
             this.getOptionsFromInternalList('personen_massnahmen'),
         ]).then(() => {
-            // this.setState('new')
+            this.setState('new')
             // this.setState('object') // debug
-            this.setState('action') // debug
+            // this.setState('action') // debug
         }).catch((error) => {
             console.error('[NfisQuickEntry] failed to load initial data', error)
             this.__loadError = error?.message || String(error)
@@ -241,7 +243,9 @@ class NfisQuickEntry extends RootMenuApp {
     __getVerticalListLayoutContentForNewState() {
         const form = this.__getOrCreateForm(NfisQuickEntryNewForm, (formData) => {
             this.__updateNewFormActionButtonVisibility(formData)
-            console.log(this.__getNextNumber(formData.gemarkung));
+            this.__getNextNumber(formData.gemarkung).then(nextNumber => {
+                console.log(nextNumber);
+            })
 
         })
 
@@ -462,20 +466,45 @@ class NfisQuickEntry extends RootMenuApp {
         return element
     }
 
-    __getNextNumber(fundstelleUri) {
+    async __getNextNumber(germarkungUri) {
         const config = ez5.session.getBaseConfig("plugin", "numeric-id-auto-incrementer");
         if (!config) return null;
+        const incrementerId = "fundstellennummer"
         const idFieldName = config.numericIdAutoIncrementer.incrementer_id_field_name
         const valuesFieldName = config.numericIdAutoIncrementer.incrementer_values_field_name
         const objectType = config.numericIdAutoIncrementer.incrementer_object_type
+        const maskName = config.numericIdAutoIncrementer.incrementer_mask
+        const url = '/api/v1/db/' + objectType + '/' + maskName + '/list?access_token=' + this.accessToken
 
-        console.log({
-            idFieldName,
-            valuesFieldName,
-            objectType
-        });
+        const incrementerConfig = config.numericIdAutoIncrementer.incrementers.find((item => item.incrementer_id === incrementerId))
+        if (!incrementerConfig) return console.error(`Can't find incrementer config '${incrementerId}'`)
 
-        // TODO: Get counter object with zaehler_id 'fundstellennummer' and extract the current counter for the uri and return it
+        // console.log({
+        //     germarkungUri,
+        //     idFieldName,
+        //     valuesFieldName,
+        //     objectType,
+        //     maskName,
+        //     incrementerConfig
+        // });
+
+        if (!this.__incrementerObject) {
+            const response = await fetch(url, { method: "GET" })
+            await this._assertResponseOk(response, `__getNextNumber`)
+
+            const objects = (await response.json())?.filter(object => object._latest_version && !object._latest_version_deleted_at);
+            if (!objects) return console.error("Error extracting incremenber objects from response. Objects: " + JSON.stringify(objects))
+
+            const incrementer = objects.find(item => item[objectType][idFieldName] === incrementerId);
+            if (!incrementer) return console.error(`Can't find incrementer with ${idFieldName} '${incrementerId}'`)
+            this.__incrementerObject = incrementer
+        }
+
+        // console.log(this.__incrementerObject);
+        const counters = JSON.parse(this.__incrementerObject[objectType][valuesFieldName])
+
+        return (counters[germarkungUri] || 0) + 1
+
     }
 
     __reset() {
