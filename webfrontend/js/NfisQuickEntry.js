@@ -14,7 +14,7 @@ class NfisQuickEntry extends RootMenuApp {
     // state: end => Anzeige der angelegten Objekte und Frage ob eine weitere Fundstelle angelegt werden soll
     constructor() {
         super()
-        this.accessToken = ez5.session.data.access_token
+        this.accessToken = ez5.session.token ?? ez5.session.data.access_token
         this.title = 'Neue Fundstelle'
         this.__state = 'init'
         this.forms = new Map();
