@@ -148,12 +148,10 @@ class NfisQuickEntry extends RootMenuApp {
 
     async __getPoolIds() {
         return new Promise(async (resolve, reject) => {
-            const access_token = ez5.session.data.access_token
-
             const response = await fetch("/api/v1/pool", {
                 headers: {
                     Accept: 'application/json',
-                    Authorization: `Bearer ${access_token}`
+                    Authorization: `Bearer ${this.accessToken}`
                 },
             });
             if (!response.ok) {
