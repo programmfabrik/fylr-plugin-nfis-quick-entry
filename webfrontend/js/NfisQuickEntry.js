@@ -269,7 +269,7 @@ class NfisQuickEntry extends RootMenuApp {
                             this.setState('object')
                         }).catch((error) => {
                             console.error('[NfisQuickEntry] failed to create Fundstelle', error)
-                            CUI.problem({ text: 'Fehler beim Anlegen der Fundstelle. Bitte versuchen Sie es erneut.' })
+                            this.__showApiErrorProblem('Fehler beim Anlegen der Fundstelle. Bitte versuchen Sie es erneut.', error)
                             this.setState('new')
                         })
                     })
@@ -316,7 +316,7 @@ class NfisQuickEntry extends RootMenuApp {
                         })
                     }).catch((error) => {
                         console.error('[NfisQuickEntry] failed to save Objekt', error)
-                        CUI.problem({ text: 'Fehler beim Speichern des Objekts. Bitte versuchen Sie es erneut.' })
+                        this.__showApiErrorProblem('Fehler beim Speichern des Objekts. Bitte versuchen Sie es erneut.', error)
                         this.setState('object')
                     })
                 }
@@ -353,7 +353,7 @@ class NfisQuickEntry extends RootMenuApp {
                             this.setState('end')
                         }).catch((error) => {
                             console.error('[NfisQuickEntry] failed to create Maßnahme', error)
-                            CUI.problem({ text: 'Fehler beim Anlegen der Maßnahme. Bitte versuchen Sie es erneut.' })
+                            this.__showApiErrorProblem('Fehler beim Anlegen der Maßnahme. Bitte versuchen Sie es erneut.', error)
                             this.setState('action')
                         })
                     })
@@ -1354,7 +1354,40 @@ class NfisQuickEntry extends RootMenuApp {
         const body = await response.text().catch(() => '<unable to read response body>');
         const message = `${context} failed with status ${response.status} ${response.statusText}: ${body}`;
         console.error(`[NfisQuickEntry] ${message}`);
-        throw new Error(message);
+
+        const error = new Error(message);
+        try {
+            error.responseBody = JSON.parse(body);
+        } catch (e) {
+            // body wasn't JSON - error.responseBody stays undefined, callers
+            // fall back to the generic message
+        }
+        throw error;
+    }
+
+    __getValidationMessages(error) {
+        const body = error?.responseBody;
+        if (body?.code !== 'validation.plugin.error') {
+            return null;
+        }
+        const problems = body.parameters?.problems;
+        if (!Array.isArray(problems)) {
+            return null;
+        }
+        const messages = problems.flat().map((problem) => problem?.message).filter(Boolean);
+        return messages.length > 0 ? messages : null;
+    }
+
+    __showApiErrorProblem(fallbackText, error) {
+        const messages = this.__getValidationMessages(error);
+        if (!messages) {
+            CUI.problem({ text: fallbackText });
+            return;
+        }
+        CUI.problem({
+            text: messages.length === 1 ? messages[0] : messages.map((m) => `- ${m}`).join('\n'),
+            markdown: messages.length > 1
+        });
     }
 }
 
