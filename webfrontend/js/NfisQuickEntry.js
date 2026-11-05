@@ -923,9 +923,9 @@ class NfisQuickEntry extends RootMenuApp {
                 "_nested:item__dokumente": [],
                 "_nested:item__identifier": [],
                 "_nested:item__titel": [
-                    {
-                        "titel": "Platzhalter (sollte durch anderes Plugin gesetzt werden)"
-                    }
+                    // {
+                    //     "titel": "Platzhalter (sollte durch anderes Plugin gesetzt werden)"
+                    // }
                 ],
                 "lk_objekttyp": danteObjectType,
                 "objekttyp_ergaenzung": null,
